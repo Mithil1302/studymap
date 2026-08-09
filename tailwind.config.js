@@ -1,0 +1,112 @@
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        "warning-coral": "#F06292",
+        "secondary-container": "#fdd34d",
+        "on-surface-variant": "#444748",
+        "surface-container-highest": "#e3e2df",
+        "tertiary-fixed": "#d1e4ff",
+        "on-secondary": "#ffffff",
+        "surface-container-low": "#f4f4f0",
+        "on-tertiary-fixed-variant": "#00497d",
+        "on-secondary-fixed-variant": "#574500",
+        "outline-variant": "#c4c7c7",
+        "surface-container": "#efeeea",
+        "on-tertiary-container": "#0088e1",
+        "on-secondary-fixed": "#241a00",
+        "on-secondary-container": "#725b00",
+        "inverse-primary": "#c8c6c5",
+        "on-primary": "#ffffff",
+        "background": "#faf9f5",
+        "tertiary-container": "#001d36",
+        "secondary-fixed-dim": "#ebc23e",
+        "on-primary-fixed": "#1c1b1b",
+        "secondary-fixed": "#ffe087",
+        "secondary": "#735c00",
+        "success-green": "#81C784",
+        "primary": "#000000",
+        "error-container": "#ffdad6",
+        "on-surface": "#1b1c1a",
+        "outline": "#747878",
+        "tertiary": "#000000",
+        "surface": "#faf9f5",
+        "primary-container": "#1c1b1b",
+        "inverse-surface": "#2f312e",
+        "surface-container-high": "#e9e8e4",
+        "notebook-lavender": "#B39DDB",
+        "surface-dim": "#dbdad6",
+        "surface-container-lowest": "#ffffff",
+        "on-primary-container": "#858383",
+        "primary-fixed": "#e5e2e1",
+        "on-tertiary-fixed": "#001d36",
+        "surface-tint": "#5f5e5e",
+        "ui-gray": "#EEEEEE",
+        "on-error": "#ffffff",
+        "inverse-on-surface": "#f2f1ed",
+        "surface-bright": "#faf9f5",
+        "primary-fixed-dim": "#c8c6c5",
+        "on-error-container": "#93000a",
+        "on-primary-fixed-variant": "#474746",
+        "surface-variant": "#e3e2df",
+        "on-tertiary": "#ffffff",
+        "tertiary-fixed-dim": "#9ecaff",
+        "on-background": "#1b1c1a",
+        "error": "#ba1a1a",
+        "paper-white": "#FFFFFF",
+        "blue-ink": "#2196F3"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "margin-page": "32px",
+        "sidebar-right": "340px",
+        "unit": "4px",
+        "sidebar-left": "240px",
+        "gutter": "24px",
+        "card-padding": "20px"
+      },
+      fontFamily: {
+        "label-caps": ["Hanken Grotesk", "sans-serif"],
+        "headline-md": ["Chivo", "sans-serif"],
+        "annotation-lg": ["Bricolage Grotesque", "sans-serif"],
+        "headline-lg-mobile": ["Chivo", "sans-serif"],
+        "body-lg": ["Hanken Grotesk", "sans-serif"],
+        "display-lg": ["Chivo", "sans-serif"],
+        "headline-lg": ["Chivo", "sans-serif"],
+        "body-md": ["Hanken Grotesk", "sans-serif"],
+        "annotation-sm": ["Bricolage Grotesque", "sans-serif"],
+        "handwritten": ["Caveat", "cursive"]
+      },
+      fontSize: {
+        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+        "annotation-lg": ["20px", { lineHeight: "24px", letterSpacing: "0.01em", fontWeight: "400" }],
+        "headline-lg-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "800" }],
+        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "annotation-sm": ["14px", { lineHeight: "18px", fontWeight: "400" }]
+      },
+      animation: {
+        "fade-in-up": "fadeInUp 0.5s ease-out forwards"
+      },
+      keyframes: {
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
+        }
+      }
+    },
+  },
+  plugins: [],
+}
