@@ -30,28 +30,7 @@ export default function Conversation() {
                 <p className="text-base md:text-body-lg text-on-surface-variant mb-8 md:mb-12 max-w-md">Ask your tutor anything from the course.</p>
                 
                 <div className="flex flex-col gap-3 w-full max-w-sm text-left">
-                  <p className="text-label-caps font-label-caps text-on-surface-variant text-center mb-2">Try asking:</p>
-                  <button 
-                    onClick={() => { setInputText('What is gradient descent?'); }}
-                    className="bg-white border-2 border-primary p-3 rounded-lg text-sm md:text-body-md hover:bg-primary/5 transition-colors hard-shadow-sm text-left flex justify-between items-center group"
-                  >
-                    What is gradient descent?
-                    <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity text-sm">arrow_forward</span>
-                  </button>
-                  <button 
-                    onClick={() => { setInputText('Explain the vanishing gradient problem'); }}
-                    className="bg-white border-2 border-primary p-3 rounded-lg text-sm md:text-body-md hover:bg-primary/5 transition-colors hard-shadow-sm text-left flex justify-between items-center group"
-                  >
-                    Explain the vanishing gradient problem
-                    <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity text-sm">arrow_forward</span>
-                  </button>
-                  <button 
-                    onClick={() => { setInputText('Compare L1 and L2 regularization'); }}
-                    className="bg-white border-2 border-primary p-3 rounded-lg text-sm md:text-body-md hover:bg-primary/5 transition-colors hard-shadow-sm text-left flex justify-between items-center group"
-                  >
-                    Compare L1 and L2 regularization
-                    <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity text-sm">arrow_forward</span>
-                  </button>
+                  {/* Empty state has no hardcoded questions as per requirements */}
                 </div>
               </div>
             ) : (
@@ -77,7 +56,7 @@ export default function Conversation() {
                           Thinking through your course material...
                         </div>
                       )}
-                      {(msg.status === 'streaming' || msg.status === 'complete' || msg.status === 'error' || msg.status === 'cancelled') && (
+                      {(!msg.status || msg.status === 'streaming' || msg.status === 'complete' || msg.status === 'error' || msg.status === 'cancelled') && (
                         <div className="max-w-full overflow-hidden break-words prose-p:my-2">
                           <MarkdownRenderer content={msg.content} />
                         </div>
@@ -100,7 +79,7 @@ export default function Conversation() {
                     </div>
                     
                     {/* Source Chips */}
-                    {msg.citations && msg.citations.length > 0 && msg.status === 'complete' && (
+                    {msg.citations && msg.citations.length > 0 && (!msg.status || msg.status === 'complete') && (
                       <div className="absolute -bottom-4 right-4 md:right-8 flex flex-col items-end">
                         <span className="text-xs md:text-sm handwritten-blue mb-1 mr-2">from the lecture</span>
                         <div className="flex gap-2 flex-wrap justify-end">

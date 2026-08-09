@@ -1,17 +1,19 @@
-import { createContext, useContext, useState, useMemo } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import conversationData from '../../data/conversation.json';
 import conversationEmptyData from '../../data/conversation-empty.json';
 import lecture01 from '../../data/lectures/lecture-01-linear-models.json';
 import lecture02 from '../../data/lectures/lecture-02-gradient-descent.json';
 import lecture03 from '../../data/lectures/lecture-03-regularization.json';
 import { streamResponse } from '../../data/mock-stream.mjs';
+import { useProgress } from './ProgressContext';
+import { courseNodes } from '../data/courseGraph';
 
 const StudyMapContext = createContext();
 
 export function StudyMapProvider({ children }) {
-  // For testing empty state vs populated, we will keep a boolean toggle or just provide both.
-  // We'll default to the empty conversation to satisfy the prompt requirement.
-  const [useEmptyState, setUseEmptyState] = useState(true);
+  // Default to populated conversation for testing requirements
+  const [useEmptyState, setUseEmptyState] = useState(false);
+  const { markNodeInProgress } = useProgress();
   
   const currentConversation = useEmptyState ? conversationEmptyData : conversationData;
   const lectures = useMemo(() => [lecture01, lecture02, lecture03], []);
@@ -41,6 +43,12 @@ export function StudyMapProvider({ children }) {
 
   // Streaming state
   const [messages, setMessages] = useState(currentConversation.messages || []);
+  
+  // Keep messages in sync if the user toggles between empty and populated states
+  useEffect(() => {
+    setMessages(currentConversation.messages || []);
+  }, [currentConversation]);
+
   const [activeStream, setActiveStream] = useState({ isStreaming: false, abortController: null });
 
   // Scenario matching utility
@@ -77,11 +85,6 @@ export function StudyMapProvider({ children }) {
       let isFirstChunk = true;
       let finalCitations = [];
       
-      // Attempt to get citations directly if possible from the module, 
-      // but streamResponse doesn't yield citations, it only yields string chunks.
-      // We can fetch the scenario object to grab citations.
-      // Wait, mock-stream.mjs exports getScenario. Let's import it.
-      
       for await (const chunk of streamResponse(scenarioId, { signal: controller.signal })) {
         if (isFirstChunk) {
           setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, status: 'streaming' } : m));
@@ -90,12 +93,23 @@ export function StudyMapProvider({ children }) {
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content + chunk } : m));
       }
       
-      // Dynamic import to avoid circular dep if any, or just import getScenario at the top
       const { getScenario } = await import('../../data/mock-stream.mjs');
       const scenario = getScenario(scenarioId);
       finalCitations = scenario.citations || [];
 
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, status: 'complete', citations: finalCitations } : m));
+      
+      // Update graph progress based on citations
+      finalCitations.forEach(citation => {
+        const slideData = getSlideFromCitation(citation);
+        if (slideData) {
+          // Find if this slide is mapped to a concept node
+          const conceptNode = courseNodes.find(n => n.lectureId === slideData.lecture.lecture_id && n.slides && n.slides.includes(citation.slide));
+          if (conceptNode) {
+            markNodeInProgress(conceptNode.id);
+          }
+        }
+      });
       
     } catch (err) {
       if (err.name === 'AbortError') {

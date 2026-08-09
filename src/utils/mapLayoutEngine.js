@@ -1,6 +1,21 @@
+import { courseNodes, courseEdges } from '../data/courseGraph';
+
 export function generateMapLayout(lectures, activeCitation) {
   const nodes = [];
   const edges = [];
+
+  // Deterministic layout configuration
+  const startX = 250;
+  const startY = 150;
+  const colWidth = 350;
+  const rowHeight = 220;
+
+  // Group nodes by week to assign columns
+  const nodesByWeek = {
+    1: courseNodes.filter(n => n.week === 1),
+    2: courseNodes.filter(n => n.week === 2),
+    3: courseNodes.filter(n => n.week === 3)
+  };
 
   // Simple deterministic pseudo-random for consistent rotations
   let seed = 12345;
@@ -10,112 +25,84 @@ export function generateMapLayout(lectures, activeCitation) {
   };
   const getRotation = () => (random() * 6 - 3).toFixed(1);
 
-  // Helper to construct a curved SVG path connecting two nodes
-  const createEdge = (sourceNode, targetNode) => {
-    // Connect from bottom of source to top of target
-    const sx = sourceNode.x;
-    const sy = sourceNode.y + 120; // approximate half height of a card
-    const tx = targetNode.x;
-    const ty = targetNode.y - 120;
-
-    // Control points for a smooth vertical curve
-    const cx1 = sx;
-    const cy1 = sy + (ty - sy) / 2;
-    const cx2 = tx;
-    const cy2 = sy + (ty - sy) / 2;
-
-    return {
-      id: `edge-${sourceNode.id}-${targetNode.id}`,
-      sourceId: sourceNode.id,
-      targetId: targetNode.id,
-      path: `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`
-    };
-  };
-
-  // 1. ROOT NODE
-  const rootNode = {
-    id: 'root',
-    type: 'core',
-    title: 'Machine Learning Basics',
-    subtitle: 'CS 4780 Core',
-    description: 'Foundational concepts in supervised and unsupervised learning.',
-    x: 600,
-    y: 100,
-    rotation: getRotation(),
-    metadata: null
-  };
-  nodes.push(rootNode);
-
-  // Check if active citation exists
-  const isActive = (lecTitle, slideNum) => {
-    if (!activeCitation) return false;
-    // activeCitation.lecture might be "Week 01 — Linear Models..." or just "Linear Models"
-    const matchLec = activeCitation.lecture.includes(lecTitle);
-    const matchSlide = activeCitation.slide === slideNum;
-    return matchLec && matchSlide;
-  };
-
-  // 2. LECTURE NODES
-  // We'll spread them horizontally
-  const startX = 250;
-  const spacingX = 350;
+  // Position nodes
+  const nodePositions = {};
   
-  lectures.forEach((lecture, lIdx) => {
-    const lx = startX + (lIdx * spacingX);
-    const ly = 350;
-
-    const lectureNode = {
-      id: `lec-${lecture.lecture_id}`,
-      type: 'lecture',
-      title: lecture.title,
-      subtitle: `Week ${lecture.week.toString().padStart(2, '0')}`,
-      description: `${lecture.slides.length} slides available`,
-      x: lx,
-      y: ly,
-      rotation: getRotation(),
-      metadata: { lectureId: lecture.lecture_id, slideNumber: 1 }
-    };
-    nodes.push(lectureNode);
-    edges.push(createEdge(rootNode, lectureNode));
-
-    // 3. CONCEPT NODES (extracted from slides)
-    // Filter slides to pick 3-4 substantive ones per lecture
-    const excludedKeywords = ['summary', 'what a', 'when', 'comparing', 'why'];
-    const conceptSlides = lecture.slides.filter(s => {
-      const t = s.title.toLowerCase();
-      if (excludedKeywords.some(kw => t.includes(kw))) return false;
-      return true;
-    }).slice(0, 3); // take up to 3 per lecture for balanced map
-
-    let parentNode = lectureNode;
-
-    conceptSlides.forEach((slide, sIdx) => {
-      const isFocus = isActive(lecture.title, slide.slide_number);
-      const cx = lx;
-      const cy = ly + 250 + (sIdx * 250); // stack vertically
+  [1, 2, 3].forEach(week => {
+    const weekNodes = nodesByWeek[week];
+    if (!weekNodes) return;
+    
+    // Position the week nodes in a vertical column
+    weekNodes.forEach((node, idx) => {
+      // Special offset for the root node to make it stand out
+      const isCore = node.type === 'core';
+      const x = startX + ((week - 1) * colWidth) + (isCore ? 0 : 50);
+      const y = startY + (idx * rowHeight);
       
-      const nodeType = isFocus ? 'focus' : (sIdx === 0 ? 'suggested' : 'concept');
-
-      const conceptNode = {
-        id: `slide-${lecture.lecture_id}-${slide.slide_number}`,
-        type: nodeType,
-        title: slide.title,
-        subtitle: `Slide ${slide.slide_number}`,
-        description: slide.notes || (slide.bullets && slide.bullets[0]) || '',
-        x: cx,
-        y: cy,
-        rotation: getRotation(),
-        metadata: { lectureId: lecture.lecture_id, slideNumber: slide.slide_number }
+      const positionedNode = {
+        ...node,
+        x,
+        y,
+        rotation: getRotation()
       };
       
-      nodes.push(conceptNode);
-      edges.push(createEdge(parentNode, conceptNode));
-      
-      // Chain the concepts down, or all attach to the lecture?
-      // "Chain" makes it look more like a progression
-      parentNode = conceptNode;
+      nodePositions[node.id] = positionedNode;
+      nodes.push(positionedNode);
     });
   });
+
+  // Create edges with smooth SVG paths based on actual node positions
+  courseEdges.forEach(edge => {
+    const sourceNode = nodePositions[edge.source];
+    const targetNode = nodePositions[edge.target];
+    
+    if (sourceNode && targetNode) {
+      // Nodes are roughly 240px wide and 150px tall
+      // Anchor source at bottom center, target at top center
+      const sx = sourceNode.x;
+      const sy = sourceNode.y + 100;
+      const tx = targetNode.x;
+      const ty = targetNode.y - 100;
+      
+      // Control points for a cubic bezier curve to make lines flow nicely
+      // If same column (vertical flow), bow out slightly
+      // If across columns, s-curve horizontally
+      let cx1, cy1, cx2, cy2;
+      
+      if (Math.abs(tx - sx) < 50) {
+        // Vertical connection
+        cx1 = sx + 50;
+        cy1 = sy + (ty - sy) / 2;
+        cx2 = tx + 50;
+        cy2 = sy + (ty - sy) / 2;
+      } else {
+        // Horizontal connection
+        cx1 = sx;
+        cy1 = sy + (ty - sy) / 2;
+        cx2 = tx;
+        cy2 = sy + (ty - sy) / 2;
+      }
+
+      edges.push({
+        id: `edge-${edge.source}-${edge.target}`,
+        sourceId: edge.source,
+        targetId: edge.target,
+        path: `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`
+      });
+    }
+  });
+
+  // Assign focus type based on active citation
+  if (activeCitation) {
+    const focusLecture = lectures.find(l => l.title === activeCitation.lecture || `Week ${l.week} — ${l.title}` === activeCitation.lecture);
+    if (focusLecture) {
+      // Find a node that references this slide
+      const focusNode = nodes.find(n => n.lectureId === focusLecture.lecture_id && n.slides && n.slides.includes(activeCitation.slide));
+      if (focusNode) {
+        focusNode.type = 'focus';
+      }
+    }
+  }
 
   return { nodes, edges };
 }
