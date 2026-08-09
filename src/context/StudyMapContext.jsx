@@ -10,8 +10,8 @@ const StudyMapContext = createContext();
 
 export function StudyMapProvider({ children }) {
   // For testing empty state vs populated, we will keep a boolean toggle or just provide both.
-  // We'll default to the populated conversation to satisfy the initial prompt requirement to render conversation.json.
-  const [useEmptyState, setUseEmptyState] = useState(false);
+  // We'll default to the empty conversation to satisfy the prompt requirement.
+  const [useEmptyState, setUseEmptyState] = useState(true);
   
   const currentConversation = useEmptyState ? conversationEmptyData : conversationData;
   const lectures = useMemo(() => [lecture01, lecture02, lecture03], []);

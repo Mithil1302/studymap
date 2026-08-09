@@ -7,9 +7,9 @@ import { materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function MarkdownRenderer({ content }) {
   return (
-    <ReactMarkdown
-      className="prose prose-slate max-w-none prose-p:text-body-md prose-headings:text-primary prose-a:text-[#0088e1]"
-      remarkPlugins={[remarkGfm, remarkMath]}
+    <div className="prose prose-slate max-w-none prose-p:text-body-md prose-headings:text-primary prose-a:text-[#0088e1]">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
       rehypePlugins={[rehypeKatex]}
       components={{
         code({ inline, className, children, ...props }) {
@@ -62,6 +62,7 @@ export default function MarkdownRenderer({ content }) {
       }}
     >
       {content}
-    </ReactMarkdown>
+      </ReactMarkdown>
+    </div>
   );
 }
