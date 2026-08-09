@@ -2,6 +2,14 @@
   "description": "Canned tutor responses replayed by mock-stream.mjs. Each scenario is a full response plus how it should behave while streaming. Nothing here calls a real model — you need no API key and every run is identical.",
   "scenarios": [
     {
+      "id": "greeting",
+      "prompt": "Hi/Hello",
+      "first_token_delay_ms": 200,
+      "chunk_delay_ms": 10,
+      "text": "Hello! I am your StudyMap tutor. How can I help you with your course today?",
+      "citations": []
+    },
+    {
       "id": "plain",
       "prompt": "What is the difference between supervised and unsupervised learning?",
       "first_token_delay_ms": 400,

@@ -11,8 +11,8 @@ import { courseNodes } from '../data/courseGraph';
 const StudyMapContext = createContext();
 
 export function StudyMapProvider({ children }) {
-  // Default to populated conversation for testing requirements
-  const [useEmptyState, setUseEmptyState] = useState(false);
+  // Default to empty conversation
+  const [useEmptyState, setUseEmptyState] = useState(true);
   const { markNodeInProgress } = useProgress();
   
   const currentConversation = useEmptyState ? conversationEmptyData : conversationData;
@@ -41,37 +41,63 @@ export function StudyMapProvider({ children }) {
 
   const activeSlideData = getSlideFromCitation(activeCitation);
 
-  // Streaming state
-  const [messages, setMessages] = useState(currentConversation.messages || []);
+  // Streaming state, initialize from localStorage or empty array
+  const [messages, setMessages] = useState(() => {
+    try {
+      const stored = localStorage.getItem('studymap_conversation');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
   
-  // Keep messages in sync if the user toggles between empty and populated states
+  // Persist messages to localStorage whenever they change
   useEffect(() => {
-    setMessages(currentConversation.messages || []);
-  }, [currentConversation]);
+    localStorage.setItem('studymap_conversation', JSON.stringify(messages));
+  }, [messages]);
 
   const [activeStream, setActiveStream] = useState({ isStreaming: false, abortController: null });
 
   // Scenario matching utility
   const matchScenario = (text) => {
     const t = text.toLowerCase();
-    if (t.includes('code') || t.includes('implement')) return 'code';
+    
+    // Test A
+    if (t.match(/^(hi|hello|hey|greetings)\b/)) return 'greeting';
+    // Test B
+    if (t.includes('gradient descent')) return 'code';
+    // Test C (training error / unseen data / overfitting)
+    if (t.includes('training error') || t.includes('unseen data') || t.includes('overfit')) return 'slow'; // or table? slow mentions test set
+    // Test D
+    if (t.includes('vanishing gradient')) return 'long';
+    // Test E
+    if (t.includes('l1') || t.includes('l2') || t.includes('regularization')) return 'table';
+
+    // General keyword matching (more precise to avoid collisions)
+    if (t.includes('supervised') || t.includes('unsupervised')) return 'plain';
+    if (t.includes('implement') || t.includes('code')) return 'code';
     if (t.includes('math') || t.includes('sigmoid') || t.includes('derivative')) return 'math';
-    if (t.includes('table') || t.includes('regularization') || t.includes('compare')) return 'table';
-    if (t.includes('long') || t.includes('backpropagation') || t.includes('everything')) return 'long';
+    if (t.includes('compare') || t.includes('table')) return 'table';
+    if (t.includes('backpropagation') || t.includes('everything')) return 'long';
     if (t.includes('slow') || t.includes('summarise') || t.includes('summarize')) return 'slow';
-    if (t.includes('refusal') || t.includes('exam') || t.includes('schedule')) return 'refusal';
-    if (t.includes('error') || t.includes('midterm') || t.includes('solutions')) return 'error-midstream';
-    return 'plain';
+    if (t.includes('exam') || t.includes('schedule')) return 'refusal';
+    
+    // Specifically require 'midterm' or 'solutions' for the error scenario, 
+    // because 'error' is too common a word (e.g. 'training error')
+    if (t.includes('midterm') || t.includes('solutions')) return 'error-midstream';
+    
+    return 'refusal';
   };
 
   const sendMessage = async (text) => {
     if (activeStream.isStreaming) return;
 
     // 1. Add student message
-    const userMsg = { id: Date.now().toString(), role: 'user', content: text };
+    const userMsg = { id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(), role: 'user', content: text };
     
     // 2. Add placeholder assistant message
-    const assistantId = (Date.now() + 1).toString();
+    const assistantId = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + 1).toString();
     const assistantMsg = { id: assistantId, role: 'assistant', content: '', status: 'thinking', citations: [] };
     
     setMessages(prev => [...prev, userMsg, assistantMsg]);
@@ -128,8 +154,8 @@ export function StudyMapProvider({ children }) {
     }
   };
 
-  // Override currentConversation to use local state
-  const liveConversation = { ...currentConversation, messages };
+  // Provide a clean currentConversation object for Conversation.jsx to consume
+  const liveConversation = { messages };
 
   return (
     <StudyMapContext.Provider
