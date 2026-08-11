@@ -41,7 +41,7 @@ export default function Overview() {
                   <div 
                     key={lecture.lecture_id}
                     onClick={() => navigate(`/lectures/${lecture.lecture_id}`)}
-                    className={`bg-[#fdfbf7] border-4 border-primary p-card-padding rounded-md relative hard-shadow hover:translate-y-[-4px] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group flex flex-col h-64 transform ${rotation}`}
+                    className={`bg-[#fdfbf7] border-4 border-primary p-card-padding rounded-md relative hard-shadow hover:translate-y-[-4px] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group flex flex-col h-auto min-h-[16rem] transform ${rotation}`}
                   >
                     <div className="absolute left-0 top-0 bottom-0 w-5 border-r-2 border-dashed border-outline/50 flex flex-col justify-evenly items-center bg-primary/5 rounded-l-sm">
                       <div className="w-2.5 h-2.5 rounded-full border-2 border-primary bg-background"></div>

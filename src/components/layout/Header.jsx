@@ -19,12 +19,6 @@ export default function Header({ onOpenMenu, onOpenContext }) {
         >
           <span className="material-symbols-outlined text-2xl">menu_open</span>
         </button>
-        <button className="flex items-center justify-center p-1 hover:bg-surface-container-high rounded transition-colors text-primary">
-          <span className="material-symbols-outlined text-2xl">settings</span>
-        </button>
-        <button className="flex items-center justify-center p-1 hover:bg-surface-container-high rounded transition-colors text-primary">
-          <span className="material-symbols-outlined text-2xl">account_circle</span>
-        </button>
       </div>
     </header>
   );

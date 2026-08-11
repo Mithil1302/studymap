@@ -1,7 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useStudyMap } from '../../context/StudyMapContext';
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { startNewConversation } = useStudyMap();
 
   const navItems = [
     { name: 'Overview', path: '/', icon: 'dashboard' },
@@ -26,6 +29,7 @@ export default function Sidebar({ isOpen, onClose }) {
         md:relative md:transform-none md:flex md:flex-shrink-0
         w-[80vw] max-w-[320px] md:w-sidebar-left h-full 
         border-r-2 border-primary bg-background flex flex-col py-margin-page px-4
+        overflow-y-auto overflow-x-hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Mobile Close Button */}
@@ -40,16 +44,10 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="mb-8 px-2 mt-8 md:mt-0">
           <h1 className="text-headline-md font-headline-md text-primary font-black mb-1">CS 4780</h1>
           <p className="text-body-md font-body-md text-on-surface-variant">Machine Learning for Engineers</p>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-2 border-primary bg-surface-container-high overflow-hidden flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-primary">person</span>
-            </div>
-            <span className="text-label-caps font-label-caps text-on-surface-variant leading-tight">CS 4780 Professor</span>
-          </div>
         </div>
 
         {/* Navigation Links */}
-        <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+        <div className="flex-1 flex flex-col gap-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.name === 'Lectures' && location.pathname.startsWith('/lectures'));
             
@@ -76,11 +74,6 @@ export default function Sidebar({ isOpen, onClose }) {
           })}
         </div>
 
-        {/* CTA */}
-        <button className="mt-auto bg-secondary-container border-2 border-primary px-4 py-3 font-label-caps text-label-caps text-primary hard-shadow-hover transition-transform rounded flex justify-center items-center gap-2">
-          <span className="material-symbols-outlined text-sm">add</span>
-          New Note
-        </button>
       </nav>
     </>
   );

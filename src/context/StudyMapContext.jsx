@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import conversationData from '../../data/conversation.json';
-import conversationEmptyData from '../../data/conversation-empty.json';
 import lecture01 from '../../data/lectures/lecture-01-linear-models.json';
 import lecture02 from '../../data/lectures/lecture-02-gradient-descent.json';
 import lecture03 from '../../data/lectures/lecture-03-regularization.json';
@@ -11,11 +9,7 @@ import { courseNodes } from '../data/courseGraph';
 const StudyMapContext = createContext();
 
 export function StudyMapProvider({ children }) {
-  // Default to empty conversation
-  const [useEmptyState, setUseEmptyState] = useState(true);
-  const { markNodeInProgress } = useProgress();
-  
-  const currentConversation = useEmptyState ? conversationEmptyData : conversationData;
+  const { markNodeInProgress, markNodeCompleted } = useProgress();
   const lectures = useMemo(() => [lecture01, lecture02, lecture03], []);
 
   // activeCitation format: { lecture: "Lecture Title", slide: number }
@@ -41,53 +35,106 @@ export function StudyMapProvider({ children }) {
 
   const activeSlideData = getSlideFromCitation(activeCitation);
 
-  // Streaming state, initialize from localStorage or empty array
-  const [messages, setMessages] = useState(() => {
+  // Streaming state, initialize from localStorage or empty default
+  const [conversations, setConversations] = useState(() => {
     try {
-      const stored = localStorage.getItem('studymap_conversation');
-      if (stored) return JSON.parse(stored);
+      const stored = localStorage.getItem('studymap_conversations_v3');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Sanitize messages: any stuck in 'thinking' or 'streaming' should be marked as 'error'
+        Object.values(parsed).forEach(conv => {
+          conv.messages = conv.messages.map(msg => {
+            if (msg.status === 'thinking' || msg.status === 'streaming') {
+              return { ...msg, status: 'error' };
+            }
+            return msg;
+          });
+        });
+        return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
-    return [];
+    // ALWAYS start with a genuinely empty conversation on first launch
+    return {
+      'demo': {
+        id: 'demo',
+        messages: []
+      }
+    };
   });
-  
-  // Persist messages to localStorage whenever they change
+
+  const [activeConversationId, setActiveConversationId] = useState(() => {
+    try {
+      const stored = localStorage.getItem('studymap_active_conversation_id');
+      const parsedConversations = localStorage.getItem('studymap_conversations_v3') ? JSON.parse(localStorage.getItem('studymap_conversations_v3')) : null;
+      if (stored && parsedConversations && parsedConversations[stored]) {
+        return stored;
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    return 'demo';
+  });
+
+  // Persist state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('studymap_conversation', JSON.stringify(messages));
-  }, [messages]);
+    localStorage.setItem('studymap_conversations_v3', JSON.stringify(conversations));
+    localStorage.setItem('studymap_active_conversation_id', activeConversationId);
+  }, [conversations, activeConversationId]);
+
+  // Derived active messages
+  const messages = conversations[activeConversationId]?.messages || [];
+
+  // Helper to update messages for the active conversation
+  const setMessages = (updater) => {
+    setConversations(prev => {
+      const active = prev[activeConversationId];
+      if (!active) return prev;
+      const newMessages = typeof updater === 'function' ? updater(active.messages) : updater;
+      return {
+        ...prev,
+        [activeConversationId]: {
+          ...active,
+          messages: newMessages
+        }
+      };
+    });
+  };
+
+  const startNewConversation = () => {
+    const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+    setConversations(prev => ({
+      ...prev,
+      [newId]: { id: newId, messages: [] }
+    }));
+    setActiveConversationId(newId);
+  };
 
   const [activeStream, setActiveStream] = useState({ isStreaming: false, abortController: null });
 
   // Scenario matching utility
   const matchScenario = (text) => {
-    const t = text.toLowerCase();
+    const t = text.trim().toLowerCase().replace(/[?.,!]/g, ''); // strip basic punctuation for matching
     
-    // Test A
-    if (t.match(/^(hi|hello|hey|greetings)\b/)) return 'greeting';
-    // Test B
-    if (t.includes('gradient descent')) return 'code';
-    // Test C (training error / unseen data / overfitting)
-    if (t.includes('training error') || t.includes('unseen data') || t.includes('overfit')) return 'slow'; // or table? slow mentions test set
-    // Test D
-    if (t.includes('vanishing gradient')) return 'long';
-    // Test E
-    if (t.includes('l1') || t.includes('l2') || t.includes('regularization')) return 'table';
-
-    // General keyword matching (more precise to avoid collisions)
-    if (t.includes('supervised') || t.includes('unsupervised')) return 'plain';
-    if (t.includes('implement') || t.includes('code')) return 'code';
-    if (t.includes('math') || t.includes('sigmoid') || t.includes('derivative')) return 'math';
-    if (t.includes('compare') || t.includes('table')) return 'table';
-    if (t.includes('backpropagation') || t.includes('everything')) return 'long';
-    if (t.includes('slow') || t.includes('summarise') || t.includes('summarize')) return 'slow';
-    if (t.includes('exam') || t.includes('schedule')) return 'refusal';
+    // Explicit exact matching based on mock data prompts
+    if (t === 'hi' || t === 'hello' || t === 'hi/hello' || t === 'hey') return 'greeting';
+    if (t === 'what is the difference between supervised and unsupervised learning') return 'plain';
+    if (t === 'show me how gradient descent is implemented') return 'code';
+    if (t === 'why is the sigmoid derivative at most 025') return 'math';
+    if (t === 'compare the regularization techniques we covered') return 'table';
+    if (t === 'explain everything about backpropagation') return 'long';
+    if (t === 'when is the final exam') return 'refusal';
+    if (t === 'walk me through the midterm solutions') return 'error-midstream';
+    if (t === 'summarise the whole course so far' || t === 'summarize the whole course so far') return 'slow';
     
-    // Specifically require 'midterm' or 'solutions' for the error scenario, 
-    // because 'error' is too common a word (e.g. 'training error')
-    if (t.includes('midterm') || t.includes('solutions')) return 'error-midstream';
+    // Additional exact matches from the user's test script
+    if (t === 'what is gradient descent') return 'code';
+    if (t === 'what is backpropagation') return 'long';
+    if (t === 'why is the chain rule important for backpropagation') return 'long';
+    if (t === 'what is the difference between l1 and l2 regularization') return 'table';
     
-    return 'refusal';
+    return 'fallback';
   };
 
   const sendMessage = async (text) => {
@@ -125,18 +172,6 @@ export function StudyMapProvider({ children }) {
 
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, status: 'complete', citations: finalCitations } : m));
       
-      // Update graph progress based on citations
-      finalCitations.forEach(citation => {
-        const slideData = getSlideFromCitation(citation);
-        if (slideData) {
-          // Find if this slide is mapped to a concept node
-          const conceptNode = courseNodes.find(n => n.lectureId === slideData.lecture.lecture_id && n.slides && n.slides.includes(citation.slide));
-          if (conceptNode) {
-            markNodeInProgress(conceptNode.id);
-          }
-        }
-      });
-      
     } catch (err) {
       if (err.name === 'AbortError') {
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, status: 'cancelled' } : m));
@@ -157,6 +192,19 @@ export function StudyMapProvider({ children }) {
   // Provide a clean currentConversation object for Conversation.jsx to consume
   const liveConversation = { messages };
 
+  // Wrapper for setActiveCitation to also track progress
+  const handleSetActiveCitation = (citation) => {
+    setActiveCitation(citation);
+    const slideData = getSlideFromCitation(citation);
+    if (slideData) {
+      const conceptNode = courseNodes.find(n => n.lectureId === slideData.lecture.lecture_id && n.slides && n.slides.includes(citation.slide));
+      if (conceptNode) {
+        // Mark node in progress when user explicitly clicks the citation to view it
+        markNodeInProgress(conceptNode.id);
+      }
+    }
+  };
+
   return (
     <StudyMapContext.Provider
       value={{
@@ -165,15 +213,14 @@ export function StudyMapProvider({ children }) {
         totalLectures,
         totalSlides,
         activeCitation,
-        setActiveCitation,
+        setActiveCitation: handleSetActiveCitation,
         activeLecture,
         setActiveLecture,
         activeSlideData,
-        useEmptyState,
-        setUseEmptyState,
         sendMessage,
         cancelStream,
-        activeStream
+        activeStream,
+        startNewConversation
       }}
     >
       {children}

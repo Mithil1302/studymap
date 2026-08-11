@@ -3,9 +3,16 @@ import { useProgress } from '../../context/ProgressContext';
 
 export default function MapNode({ node }) {
   const navigate = useNavigate();
-  const { getNodeStatus, markNodeCompleted } = useProgress();
+  const { getNodeStatus, markNodeCompleted, courseEdges, courseNodes } = useProgress();
   
   const status = getNodeStatus(node.id);
+
+  // Compute prerequisites and unlocks
+  const prereqEdges = courseEdges.filter(e => e.target === node.id);
+  const unlockEdges = courseEdges.filter(e => e.source === node.id);
+
+  const prerequisites = prereqEdges.map(e => courseNodes.find(n => n.id === e.source)).filter(Boolean);
+  const unlocks = unlockEdges.map(e => courseNodes.find(n => n.id === e.target)).filter(Boolean);
 
   const handleNodeClick = () => {
     if (status === 'locked') return; // Cannot navigate to locked nodes
@@ -60,7 +67,7 @@ export default function MapNode({ node }) {
 
   return (
     <div 
-      className={`absolute z-10 w-[240px] group ${status === 'locked' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      className={`absolute z-10 w-[280px] group ${status === 'locked' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
       style={style}
       onClick={handleNodeClick}
     >
@@ -83,12 +90,43 @@ export default function MapNode({ node }) {
           {node.title}
         </h3>
         
-        <p className="font-annotation-sm text-on-surface-variant line-clamp-3">
+        <p className="font-annotation-sm text-on-surface-variant mb-3 line-clamp-3">
           {node.description}
         </p>
 
+        {/* Prerequisites and Unlocks Section */}
+        {(prerequisites.length > 0 || unlocks.length > 0) && (
+          <div className="mb-2 pt-2 border-t border-primary/10 flex flex-col gap-2">
+            {prerequisites.length > 0 && (
+              <div className="text-[10px] md:text-annotation-sm leading-tight">
+                <span className="font-bold text-on-surface-variant uppercase tracking-wider block mb-1 text-[9px]">Requires:</span>
+                {prerequisites.map(p => (
+                  <div key={p.id} className="flex items-center gap-1 mb-0.5 opacity-80">
+                    <span className="material-symbols-outlined text-[10px]">
+                      {getNodeStatus(p.id) === 'completed' ? 'check_box' : 'check_box_outline_blank'}
+                    </span>
+                    <span className="truncate">{p.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {unlocks.length > 0 && status === 'completed' && (
+              <div className="text-[10px] md:text-annotation-sm leading-tight mt-1">
+                <span className="font-bold text-primary uppercase tracking-wider block mb-1 text-[9px]">Unlocks:</span>
+                {unlocks.map(u => (
+                  <div key={u.id} className="flex items-center gap-1 mb-0.5 text-secondary">
+                    <span className="material-symbols-outlined text-[10px]">lock_open</span>
+                    <span className="truncate">{u.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {status !== 'locked' && node.lectureId && (
-          <div className={`mt-4 border-t-2 pt-2 flex justify-between items-center ${status === 'completed' ? 'border-primary/20 text-primary group-hover:text-secondary' : 'border-outline-variant/30 text-on-surface-variant group-hover:text-primary'}`}>
+          <div className={`mt-2 border-t-2 pt-2 flex justify-between items-center ${status === 'completed' ? 'border-primary/20 text-primary group-hover:text-secondary' : 'border-outline-variant/30 text-on-surface-variant group-hover:text-primary'}`}>
             <span className="font-label-caps text-label-caps">Study Concept</span>
             <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </div>

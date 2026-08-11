@@ -8,7 +8,7 @@ export default function AppLayout() {
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
       <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <div className="flex flex-col flex-1 min-w-0">
         <Header 

@@ -1,9 +1,11 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import MarkdownRenderer from '../MarkdownRenderer';
 import { useStudyMap } from '../../context/StudyMapContext';
+import { useProgress } from '../../context/ProgressContext';
 
 export default function ContextPanel() {
   const { totalLectures, totalSlides, activeSlideData } = useStudyMap();
+  const { studyTrail, courseNodes } = useProgress();
   const outletContext = useOutletContext();
   const isOpen = outletContext?.isContextPanelOpen || false;
   const onClose = outletContext?.closeContextPanel || (() => {});
@@ -56,16 +58,32 @@ export default function ContextPanel() {
                 </div>
               </div>
 
-              {/* List of materials - Static placeholder for default view */}
+              {/* Study Trail */}
               <div className="space-y-4">
-                <h4 className="text-label-caps font-label-caps text-on-surface-variant border-b-2 border-primary/20 pb-2 font-bold">Recent Materials</h4>
-                <div className="flex items-start gap-3 p-3 bg-surface-container border-2 border-outline-variant rounded-md hover:border-primary transition-colors cursor-pointer group">
-                  <span className="material-symbols-outlined text-primary mt-1 shrink-0">picture_as_pdf</span>
-                  <div>
-                    <p className="font-body-md text-body-md text-primary font-bold group-hover:underline">Week 1 Slides.pdf</p>
-                    <p className="font-annotation-sm text-annotation-sm text-on-surface-variant">Added 2 days ago</p>
-                  </div>
-                </div>
+                <h4 className="text-label-caps font-label-caps text-on-surface-variant border-b-2 border-primary/20 pb-2 font-bold">Study Trail</h4>
+                
+                {studyTrail.map((nodeId, index) => {
+                  const node = courseNodes.find(n => n.id === nodeId);
+                  if (!node) return null;
+                  
+                  return (
+                    <div key={`${nodeId}-${index}`} className="flex flex-col gap-2 relative">
+                      {/* Connection line between nodes */}
+                      {index < studyTrail.length - 1 && (
+                        <div className="absolute top-8 bottom-[-16px] left-[15px] w-0.5 bg-primary/20 z-0"></div>
+                      )}
+                      <div className="flex items-start gap-3 p-3 bg-surface-container border-2 border-outline-variant rounded-md hover:border-primary transition-colors cursor-pointer group relative z-10">
+                        <div className="w-8 h-8 rounded-full border-2 border-primary bg-secondary-container flex items-center justify-center shrink-0 mt-1">
+                          <span className="text-label-caps font-bold">{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-body-md text-body-md text-primary font-bold group-hover:underline leading-tight">{node.title}</p>
+                          <p className="font-annotation-sm text-annotation-sm text-on-surface-variant mt-1">Week {node.week}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (

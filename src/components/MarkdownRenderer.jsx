@@ -47,7 +47,7 @@ export default function MarkdownRenderer({ content }) {
         table({ children }) {
           return (
             <div className="overflow-x-auto my-6 hard-shadow-sm border border-outline-variant rounded-xl">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[500px] text-left border-collapse">
                 {children}
               </table>
             </div>

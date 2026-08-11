@@ -57,7 +57,7 @@ export default function Conversation() {
                         </div>
                       )}
                       {(!msg.status || msg.status === 'streaming' || msg.status === 'complete' || msg.status === 'error' || msg.status === 'cancelled') && (
-                        <div className="max-w-full overflow-hidden break-words prose-p:my-2">
+                        <div className="max-w-full overflow-x-auto break-words prose-p:my-2">
                           <MarkdownRenderer content={msg.content} />
                         </div>
                       )}

@@ -115,6 +115,14 @@
           "slide": 15
         }
       ]
+    },
+    {
+      "id": "fallback",
+      "prompt": "Generic fallback for unmapped questions",
+      "first_token_delay_ms": 300,
+      "chunk_delay_ms": 15,
+      "text": "I don't have a prepared response for that question in the current course demo. Try asking about gradient descent, backpropagation, or regularization.",
+      "citations": []
     }
   ]
 }

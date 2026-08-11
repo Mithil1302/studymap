@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { courseNodes, courseEdges } from '../data/courseGraph';
 
 const ProgressContext = createContext();
@@ -30,13 +30,34 @@ export function ProgressProvider({ children }) {
     return new Set();
   });
 
+  const [studyTrail, setStudyTrail] = useState(() => {
+    const saved = localStorage.getItem('studymap_study_trail');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse study_trail", e);
+      }
+    }
+    return ['ml-basics']; // Root node always first
+  });
+
   // Persist to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('studymap_progress', JSON.stringify(Array.from(completedNodes)));
     localStorage.setItem('studymap_in_progress', JSON.stringify(Array.from(inProgressNodes)));
-  }, [completedNodes, inProgressNodes]);
+    localStorage.setItem('studymap_study_trail', JSON.stringify(studyTrail));
+  }, [completedNodes, inProgressNodes, studyTrail]);
 
-  const markNodeCompleted = (nodeId) => {
+  const addToTrail = useCallback((nodeId) => {
+    setStudyTrail(prev => {
+      // Don't add if it's already the most recent interaction
+      if (prev[prev.length - 1] === nodeId) return prev;
+      return [...prev, nodeId];
+    });
+  }, []);
+
+  const markNodeCompleted = useCallback((nodeId) => {
     setCompletedNodes(prev => {
       const next = new Set(prev);
       next.add(nodeId);
@@ -51,23 +72,28 @@ export function ProgressProvider({ children }) {
       }
       return prev;
     });
-  };
+    addToTrail(nodeId);
+  }, [addToTrail]);
 
-  const markNodeInProgress = (nodeId) => {
-    // Only mark in-progress if not already completed
-    if (!completedNodes.has(nodeId)) {
-      setInProgressNodes(prev => {
-        const next = new Set(prev);
-        next.add(nodeId);
-        return next;
-      });
-    }
-  };
+  const markNodeInProgress = useCallback((nodeId) => {
+    setCompletedNodes(prevCompleted => {
+      if (!prevCompleted.has(nodeId)) {
+        setInProgressNodes(prevInProg => {
+          const next = new Set(prevInProg);
+          next.add(nodeId);
+          return next;
+        });
+      }
+      return prevCompleted;
+    });
+    addToTrail(nodeId);
+  }, [addToTrail]);
 
-  const resetProgress = () => {
+  const resetProgress = useCallback(() => {
     setCompletedNodes(new Set(['ml-basics']));
     setInProgressNodes(new Set());
-  };
+    setStudyTrail(['ml-basics']);
+  }, []);
 
   // Node status calculation:
   // - 'completed': in completedNodes
@@ -99,6 +125,7 @@ export function ProgressProvider({ children }) {
     <ProgressContext.Provider value={{
       completedNodes,
       inProgressNodes,
+      studyTrail,
       markNodeCompleted,
       markNodeInProgress,
       resetProgress,
@@ -112,6 +139,7 @@ export function ProgressProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useProgress() {
   const context = useContext(ProgressContext);
   if (!context) {
