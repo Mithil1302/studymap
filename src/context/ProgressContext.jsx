@@ -30,32 +30,11 @@ export function ProgressProvider({ children }) {
     return new Set();
   });
 
-  const [studyTrail, setStudyTrail] = useState(() => {
-    const saved = localStorage.getItem('studymap_study_trail');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to parse study_trail", e);
-      }
-    }
-    return ['ml-basics']; // Root node always first
-  });
-
   // Persist to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('studymap_progress', JSON.stringify(Array.from(completedNodes)));
     localStorage.setItem('studymap_in_progress', JSON.stringify(Array.from(inProgressNodes)));
-    localStorage.setItem('studymap_study_trail', JSON.stringify(studyTrail));
-  }, [completedNodes, inProgressNodes, studyTrail]);
-
-  const addToTrail = useCallback((nodeId) => {
-    setStudyTrail(prev => {
-      // Don't add if it's already the most recent interaction
-      if (prev[prev.length - 1] === nodeId) return prev;
-      return [...prev, nodeId];
-    });
-  }, []);
+  }, [completedNodes, inProgressNodes]);
 
   const markNodeCompleted = useCallback((nodeId) => {
     setCompletedNodes(prev => {
@@ -72,8 +51,7 @@ export function ProgressProvider({ children }) {
       }
       return prev;
     });
-    addToTrail(nodeId);
-  }, [addToTrail]);
+  }, []);
 
   const markNodeInProgress = useCallback((nodeId) => {
     setCompletedNodes(prevCompleted => {
@@ -86,13 +64,11 @@ export function ProgressProvider({ children }) {
       }
       return prevCompleted;
     });
-    addToTrail(nodeId);
-  }, [addToTrail]);
+  }, []);
 
   const resetProgress = useCallback(() => {
     setCompletedNodes(new Set(['ml-basics']));
     setInProgressNodes(new Set());
-    setStudyTrail(['ml-basics']);
   }, []);
 
   // Node status calculation:
@@ -125,7 +101,6 @@ export function ProgressProvider({ children }) {
     <ProgressContext.Provider value={{
       completedNodes,
       inProgressNodes,
-      studyTrail,
       markNodeCompleted,
       markNodeInProgress,
       resetProgress,

@@ -137,8 +137,40 @@ export function StudyMapProvider({ children }) {
     return 'fallback';
   };
 
+  const extractConceptsFromQuery = (text, nodes) => {
+    const normalizedText = text.trim().toLowerCase().replace(/[?.,!]/g, '');
+    const matchedNodeIds = [];
+
+    for (const node of nodes) {
+      if (node.type === 'core') continue;
+      
+      const titleMatch = node.title.toLowerCase();
+      let match = normalizedText.includes(titleMatch);
+      
+      if (!match && node.aliases) {
+        for (const alias of node.aliases) {
+          if (normalizedText.includes(alias.toLowerCase())) {
+            match = true;
+            break;
+          }
+        }
+      }
+
+      if (match) {
+        matchedNodeIds.push(node.id);
+      }
+    }
+    return matchedNodeIds;
+  };
+
   const sendMessage = async (text) => {
     if (activeStream.isStreaming) return;
+
+    // 0. Mark mentioned concepts as in-progress
+    const conceptIds = extractConceptsFromQuery(text, courseNodes);
+    conceptIds.forEach(id => {
+      markNodeInProgress(id);
+    });
 
     // 1. Add student message
     const userMsg = { id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(), role: 'user', content: text };

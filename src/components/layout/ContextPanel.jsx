@@ -5,10 +5,19 @@ import { useProgress } from '../../context/ProgressContext';
 
 export default function ContextPanel() {
   const { totalLectures, totalSlides, activeSlideData } = useStudyMap();
-  const { studyTrail, courseNodes } = useProgress();
+  const { courseNodes, completedNodes, inProgressNodes, getNodeStatus } = useProgress();
   const outletContext = useOutletContext();
   const isOpen = outletContext?.isContextPanelOpen || false;
   const onClose = outletContext?.closeContextPanel || (() => {});
+
+  // Group courseNodes by week, ignoring core nodes
+  const nodesByWeek = courseNodes.reduce((acc, node) => {
+    if (node.type === 'core') return acc;
+    const w = node.week || 1;
+    if (!acc[w]) acc[w] = [];
+    acc[w].push(node);
+    return acc;
+  }, {});
 
   return (
     <>
@@ -58,32 +67,47 @@ export default function ContextPanel() {
                 </div>
               </div>
 
-              {/* Study Trail */}
-              <div className="space-y-4">
-                <h4 className="text-label-caps font-label-caps text-on-surface-variant border-b-2 border-primary/20 pb-2 font-bold">Study Trail</h4>
+              {/* Your Progress */}
+              <div className="space-y-6">
+                <div className="border-b-2 border-primary pb-2 mb-4">
+                  <h4 className="text-label-caps font-label-caps tracking-widest text-secondary font-bold uppercase">Your Progress</h4>
+                  <p className="text-body-md font-body-md text-on-surface-variant mt-1">
+                    {completedNodes.size + inProgressNodes.size} / {courseNodes.length} concepts explored
+                  </p>
+                </div>
                 
-                {studyTrail.map((nodeId, index) => {
-                  const node = courseNodes.find(n => n.id === nodeId);
-                  if (!node) return null;
-                  
-                  return (
-                    <div key={`${nodeId}-${index}`} className="flex flex-col gap-2 relative">
-                      {/* Connection line between nodes */}
-                      {index < studyTrail.length - 1 && (
-                        <div className="absolute top-8 bottom-[-16px] left-[15px] w-0.5 bg-primary/20 z-0"></div>
-                      )}
-                      <div className="flex items-start gap-3 p-3 bg-surface-container border-2 border-outline-variant rounded-md hover:border-primary transition-colors cursor-pointer group relative z-10">
-                        <div className="w-8 h-8 rounded-full border-2 border-primary bg-secondary-container flex items-center justify-center shrink-0 mt-1">
-                          <span className="text-label-caps font-bold">{index + 1}</span>
-                        </div>
-                        <div>
-                          <p className="font-body-md text-body-md text-primary font-bold group-hover:underline leading-tight">{node.title}</p>
-                          <p className="font-annotation-sm text-annotation-sm text-on-surface-variant mt-1">Week {node.week}</p>
-                        </div>
-                      </div>
+                {Object.keys(nodesByWeek).sort((a, b) => Number(a) - Number(b)).map(week => (
+                  <div key={week} className="mb-6">
+                    <h5 className="text-label-caps font-label-caps text-primary font-bold mb-2">WEEK {week}</h5>
+                    <div className="bg-paper-white border-2 border-primary rounded-md p-3 hard-shadow-sm flex flex-col gap-3">
+                      {nodesByWeek[week].map(node => {
+                        const status = getNodeStatus(node.id);
+                        let icon = "radio_button_unchecked";
+                        let iconClass = "text-on-surface-variant opacity-40";
+                        let textClass = "text-on-surface-variant";
+                        
+                        if (status === 'completed') {
+                          icon = "check_circle";
+                          iconClass = "text-primary";
+                          textClass = "text-primary font-bold";
+                        } else if (status === 'in-progress') {
+                          icon = "contrast";
+                          iconClass = "text-secondary";
+                          textClass = "text-primary font-bold";
+                        }
+                        
+                        return (
+                          <div key={node.id} className="flex items-start gap-3">
+                            <span className={`material-symbols-outlined text-[18px] mt-[2px] shrink-0 ${iconClass}`}>
+                              {icon}
+                            </span>
+                            <span className={`font-body-md text-body-md ${textClass} leading-tight`}>{node.title}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </>
           ) : (
