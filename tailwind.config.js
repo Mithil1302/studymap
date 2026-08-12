@@ -58,7 +58,10 @@ export default {
         "on-background": "#1b1c1a",
         "error": "#ba1a1a",
         "paper-white": "#FFFFFF",
-        "blue-ink": "#2196F3"
+        "blue-ink": "#2196F3",
+        "paper-ivory": "#F4EBDD",
+        "ink-blue": "#174A9C",
+        "ink-dark": "#202020"
       },
       borderRadius: {
         "DEFAULT": "0.25rem",

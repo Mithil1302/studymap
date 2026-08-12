@@ -23,29 +23,33 @@ export default function PageTurner({ turningState, lecture, onAnimationEnd }) {
 
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const isInvalid = !turningSlide;
+
   useEffect(() => {
+    if (isInvalid) {
+      // Skip to next slide immediately if no content to animate
+      onAnimationEnd();
+      return;
+    }
+
     const timer = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsAnimating(true);
       });
     });
     
-    // Animation duration should match the CSS
+    // Animation duration should match the CSS (1.1s) plus a small buffer
     const endTimer = setTimeout(() => {
       onAnimationEnd();
-    }, 1200); // 1.2s
+    }, 1150);
     
     return () => {
       cancelAnimationFrame(timer);
       clearTimeout(endTimer);
     };
-  }, [onAnimationEnd]);
+  }, [onAnimationEnd, isInvalid]);
 
-  if (!turningSlide) {
-    // If it involves the cover, just skip the complex animation and snap for now.
-    useEffect(() => { onAnimationEnd(); }, []);
-    return null;
-  }
+  if (isInvalid) return null;
 
   const SheetContent = () => (
     <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d' }}>

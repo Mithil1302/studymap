@@ -36,12 +36,16 @@
 
 .handwritten-text {
     font-family: 'Caveat', cursive;
+    color: #202020;
+    line-height: 1.65;
+    font-size: 1.15rem;   /* base size for inline usage — overridden by component inline styles for larger contexts */
 }
 
 .handwritten-blue {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    color: #2196F3;
-    transform: rotate(-2deg);
+    font-family: 'Caveat', cursive;
+    color: #174A9C;
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
 }
 
 /* Hide scrollbar for clean look but allow scrolling */
@@ -81,8 +85,54 @@
 }
 
 .notebook-line {
-    background-image: linear-gradient(#e3e2df 1px, transparent 1px);
+    background-image: linear-gradient(rgba(180, 155, 120, 0.22) 1px, transparent 1px);
     background-size: 100% 28px;
+}
+
+/* Physical notebook page background */
+.notebook-paper {
+    background-color: #F4EBDD;
+    background-image:
+        linear-gradient(rgba(180, 155, 120, 0.22) 1px, transparent 1px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    background-size: 100% 30px, cover;
+}
+
+/* Notebook formula box — hand-drawn border feel, warm paper */
+.formula-box {
+    border: 1.5px solid rgba(23, 74, 156, 0.55);
+    background-color: #F9F4EE;
+    padding: 1.1rem 1.5rem;
+    transform: rotate(-0.35deg);
+    box-shadow:
+        2px 3px 8px rgba(23, 74, 156, 0.07),
+        1px 1px 0 rgba(23, 74, 156, 0.10),
+        0 0 0 3px rgba(248, 243, 236, 0.9) inset;
+    position: relative;
+    margin: 2px auto;
+    width: 92%;
+    max-width: 100%;
+    text-align: center;
+    overflow-x: auto;
+    border-radius: 1px;
+}
+
+.formula-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 0.5px solid rgba(23, 74, 156, 0.15);
+    transform: rotate(0.6deg);
+    pointer-events: none;
+}
+
+/* Sticky note physical shadow — mimics post-it left edge curl */
+.sticky-note-physical {
+    box-shadow:
+        3px 5px 14px rgba(0,0,0,0.18),
+        1px 1px 3px rgba(0,0,0,0.10),
+        -1px 0 0 rgba(0,0,0,0.04),
+        0 0 0 0.5px rgba(0,0,0,0.04);
 }
 
 .paper-highlight {
@@ -169,7 +219,16 @@
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: hidden;   /* Keeps page visually bounded in 3D stack */
+}
+
+/* Inner scroll container — overflow-x must remain visible for rotated sticky notes */
+.page-scroll-area {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    /* NOTE: overflow-x is intentionally NOT set here; it is controlled via inline style per instance */
 }
 
 .page-front {
@@ -186,10 +245,10 @@
 }
 
 .tape-strip {
-    background-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    backdrop-filter: blur(2px);
-    border: 1px solid rgba(255,255,255,0.5);
+    background-color: rgba(245, 238, 220, 0.55);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+    backdrop-filter: blur(1px);
+    border: 1px solid rgba(220, 205, 175, 0.6);
 }
 
 /* ============================================================== */
@@ -258,81 +317,84 @@
 }
 
 /* DIRECTION: NEXT (Right to Left) */
-.pt-dir-next.is-animating .pt-hinge-1 { animation: pt-next-1 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-.pt-dir-next.is-animating .pt-hinge-2 { animation: pt-next-2 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-.pt-dir-next.is-animating .pt-hinge-3 { animation: pt-next-3 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+/* Hinge-3 is outermost edge — uses ease-out so it SNAPS up first (physical lift).
+   Hinge-2 is middle — uses linear travel.
+   Hinge-1 is inner (spine side) — uses ease-in so it settles slowly. */
+.pt-dir-next.is-animating .pt-hinge-1 { animation: pt-next-1 1.1s cubic-bezier(0.42, 0, 0.20, 1.0) forwards; }
+.pt-dir-next.is-animating .pt-hinge-2 { animation: pt-next-2 1.1s cubic-bezier(0.40, 0, 0.20, 1.0) forwards; }
+.pt-dir-next.is-animating .pt-hinge-3 { animation: pt-next-3 1.1s cubic-bezier(0.20, 0, 0.10, 1.0) forwards; }
 
-.pt-dir-next .pt-shadow-1 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0.3)); }
-.pt-dir-next .pt-shadow-2 { background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.05), rgba(0,0,0,0)); }
-.pt-dir-next .pt-shadow-3 { background: linear-gradient(to right, rgba(255,255,255,0.2), rgba(0,0,0,0)); }
+.pt-dir-next .pt-shadow-1 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.06), rgba(0,0,0,0.24)); }
+.pt-dir-next .pt-shadow-2 { background: linear-gradient(to left, rgba(0,0,0,0), rgba(0,0,0,0.15), rgba(0,0,0,0.35)); }
+.pt-dir-next .pt-shadow-3 { background: linear-gradient(to right, rgba(235,220,200,0.4), rgba(200,185,160,0.15), rgba(0,0,0,0)); }
 
-.pt-dir-next.is-animating .pt-shadow { animation: pt-shadow-anim 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.pt-dir-next.is-animating .pt-shadow { animation: pt-shadow-anim 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
 @keyframes pt-next-1 {
-  0%, 15% { transform: rotateY(0deg); }
-  35% { transform: rotateY(-15deg); }
-  60% { transform: rotateY(-90deg); }
-  85% { transform: rotateY(-165deg); }
-  100% { transform: rotateY(-180deg); }
+  0%, 8%  { transform: rotateY(0deg); }
+  20%     { transform: rotateY(-8deg); }   /* spine barely moves yet */
+  50%     { transform: rotateY(-85deg); }  /* crosses vertical */
+  80%     { transform: rotateY(-160deg); }
+  100%    { transform: rotateY(-180deg); }
 }
 
 @keyframes pt-next-2 {
-  0%, 15% { transform: rotateY(0deg); }
-  35% { transform: rotateY(-35deg); }
-  60% { transform: rotateY(-45deg); }
-  85% { transform: rotateY(-10deg); }
-  100% { transform: rotateY(0deg); }
+  0%, 5%  { transform: rotateY(0deg); }    /* middle follows slightly after outer */
+  18%     { transform: rotateY(-28deg); }  /* bend deepens */
+  45%     { transform: rotateY(-52deg); }  /* peak curvature at midpoint */
+  75%     { transform: rotateY(-12deg); }  /* flattening as it settles */
+  100%    { transform: rotateY(0deg); }
 }
 
 @keyframes pt-next-3 {
-  0% { transform: rotateY(0deg); }
-  15% { transform: rotateY(-40deg); }
-  35% { transform: rotateY(-50deg); }
-  60% { transform: rotateY(-45deg); }
-  85% { transform: rotateY(-5deg); }
-  100% { transform: rotateY(0deg); }
+  0%      { transform: rotateY(0deg); }    /* outer edge lifts FIRST */
+  8%      { transform: rotateY(-55deg); }  /* leading lift — creates curl illusion */
+  25%     { transform: rotateY(-68deg); }  /* outer edge fully bent */
+  55%     { transform: rotateY(-55deg); }  /* traveling across */
+  82%     { transform: rotateY(-8deg); }   /* settling */
+  100%    { transform: rotateY(0deg); }
 }
 
 @keyframes pt-shadow-anim {
-  0% { opacity: 0; }
-  30% { opacity: 0.8; }
-  60% { opacity: 1; }
-  85% { opacity: 0.4; }
+  0%   { opacity: 0; }
+  20%  { opacity: 0.6; }
+  50%  { opacity: 1; }
+  80%  { opacity: 0.5; }
   100% { opacity: 0; }
 }
 
 /* DIRECTION: PREV (Left to Right) */
-.pt-dir-prev.is-animating .pt-hinge-1 { animation: pt-prev-1 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-.pt-dir-prev.is-animating .pt-hinge-2 { animation: pt-prev-2 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-.pt-dir-prev.is-animating .pt-hinge-3 { animation: pt-prev-3 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.pt-dir-prev.is-animating .pt-hinge-1 { animation: pt-prev-1 1.1s cubic-bezier(0.42, 0, 0.20, 1.0) forwards; }
+.pt-dir-prev.is-animating .pt-hinge-2 { animation: pt-prev-2 1.1s cubic-bezier(0.40, 0, 0.20, 1.0) forwards; }
+.pt-dir-prev.is-animating .pt-hinge-3 { animation: pt-prev-3 1.1s cubic-bezier(0.20, 0, 0.10, 1.0) forwards; }
 
-.pt-dir-prev .pt-shadow-1 { background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.1), rgba(0,0,0,0)); }
-.pt-dir-prev .pt-shadow-2 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.05), rgba(0,0,0,0.3)); }
-.pt-dir-prev .pt-shadow-3 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(255,255,255,0.2)); }
+.pt-dir-prev .pt-shadow-1 { background: linear-gradient(to right, rgba(0,0,0,0.24), rgba(0,0,0,0.06), rgba(0,0,0,0)); }
+.pt-dir-prev .pt-shadow-2 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.15), rgba(0,0,0,0.35)); }
+.pt-dir-prev .pt-shadow-3 { background: linear-gradient(to right, rgba(0,0,0,0), rgba(235,220,200,0.4), rgba(200,185,160,0.15)); }
 
-.pt-dir-prev.is-animating .pt-shadow { animation: pt-shadow-anim 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.pt-dir-prev.is-animating .pt-shadow { animation: pt-shadow-anim 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
 @keyframes pt-prev-1 {
   0%, 15% { transform: rotateY(-180deg); }
-  35% { transform: rotateY(-165deg); }
-  60% { transform: rotateY(-90deg); }
-  85% { transform: rotateY(-15deg); }
-  100% { transform: rotateY(0deg); }
+  30%     { transform: rotateY(-160deg); }
+  55%     { transform: rotateY(-85deg); }
+  82%     { transform: rotateY(-8deg); }
+  100%    { transform: rotateY(0deg); }
 }
 @keyframes pt-prev-2 {
-  0%, 15% { transform: rotateY(0deg); }
-  35% { transform: rotateY(35deg); }
-  60% { transform: rotateY(45deg); }
-  85% { transform: rotateY(10deg); }
-  100% { transform: rotateY(0deg); }
+  0%, 5%  { transform: rotateY(0deg); }
+  18%     { transform: rotateY(28deg); }
+  45%     { transform: rotateY(52deg); }
+  75%     { transform: rotateY(12deg); }
+  100%    { transform: rotateY(0deg); }
 }
 @keyframes pt-prev-3 {
-  0% { transform: rotateY(0deg); }
-  15% { transform: rotateY(40deg); }
-  35% { transform: rotateY(50deg); }
-  60% { transform: rotateY(45deg); }
-  85% { transform: rotateY(5deg); }
-  100% { transform: rotateY(0deg); }
+  0%      { transform: rotateY(0deg); }
+  8%      { transform: rotateY(55deg); }   /* outer edge lifts first */
+  25%     { transform: rotateY(68deg); }
+  55%     { transform: rotateY(55deg); }
+  82%     { transform: rotateY(8deg); }
+  100%    { transform: rotateY(0deg); }
 }
 
 @media (max-width: 768px) {
