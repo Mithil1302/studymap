@@ -1,7 +1,6 @@
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import ContextPanel from '../components/layout/ContextPanel';
 import Notebook from '../components/Notebook';
 import { useStudyMap } from '../context/StudyMapContext';
 import { useProgress } from '../context/ProgressContext';
@@ -29,7 +28,7 @@ export default function LectureDetail() {
   return (
     <>
       <main className="flex-1 overflow-y-auto min-w-0 bg-background">
-        <div className="pt-6 md:pt-12 pb-12 md:pb-24 px-4 md:px-margin-page md:pl-24 max-w-5xl mx-auto flex flex-col gap-8 md:gap-16">
+        <div className="pt-6 md:pt-12 pb-12 md:pb-24 px-4 md:px-margin-page md:pl-24 w-[95%] md:w-[90%] max-w-[1400px] mx-auto flex flex-col gap-8 md:gap-16">
           {/* Breadcrumb / Context Header */}
           <div className="flex items-center gap-2 text-xs md:text-label-caps font-label-caps text-on-surface-variant mb-2 md:mb-4 uppercase tracking-widest flex-wrap">
             <Link to="/" className="hover:text-primary cursor-pointer transition-colors whitespace-nowrap">Lectures</Link>
@@ -46,9 +45,6 @@ export default function LectureDetail() {
           <Notebook lecture={lecture} />
         </div>
       </main>
-
-      {/* NavigationDrawer (Right Context Panel) */}
-      <ContextPanel />
     </>
   );
 }

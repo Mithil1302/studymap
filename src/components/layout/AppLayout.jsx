@@ -5,7 +5,6 @@ import Header from './Header';
 
 export default function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isContextPanelOpen, setIsContextPanelOpen] = useState(false);
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
@@ -13,10 +12,9 @@ export default function AppLayout() {
       <div className="flex flex-col flex-1 min-w-0">
         <Header 
           onOpenMenu={() => setIsMobileMenuOpen(true)}
-          onOpenContext={() => setIsContextPanelOpen(true)}
         />
         <div className="flex-1 overflow-hidden relative flex flex-row">
-          <Outlet context={{ isContextPanelOpen, closeContextPanel: () => setIsContextPanelOpen(false) }} />
+          <Outlet />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import MarkdownRenderer from "./MarkdownRenderer";
 import katex from "katex";
 
@@ -16,15 +16,15 @@ function FormulaBlock({ latex }) {
     });
   } catch (_) {
     return (
-      <div className="formula-box" style={{ color: "#555", fontFamily: "monospace", fontSize: "0.8rem" }}>
-        {latex}
+      <div className="formula-box" style={{ color: "#174A9C", fontSize: "1.1rem" }}>
+        <MarkdownRenderer content={latex} />
       </div>
     );
   }
   return (
     <div
-      className="formula-box"
-      style={{ color: "#174A9C" }}
+      className="formula-box math-typography"
+      style={{ color: "#1a1a1a" }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -39,16 +39,21 @@ function getStickyColor(n) {
   const c = ["#F5D76E", "#B5D5F5", "#F9C0C0", "#E8F0C8"];
   return c[n % c.length];
 }
-function getStickyPosition(n) {
-  const p = [
-    { bottom: "28px", right: "18px" },
-    { top: "100px",  right: "14px" },
-    { bottom: "28px", left: "20px" },
-    { top: "130px",  right: "18px" },
-    { bottom: "50px", right: "20px" },
-    { top: "90px",   left: "20px"  },
-  ];
-  return p[n % p.length];
+function getStickyPosition(n, variant) {
+  // Deterministic positions that avoid covering content based on layout variant
+  if (variant === "text-heavy") {
+    // Pushed to bottom right to avoid dense text
+    return { bottom: "-10px", right: "20px" };
+  } else if (variant === "formula-heavy") {
+    // Pushed to bottom left to avoid centered formula boxes
+    return { bottom: "10px", left: "15px" };
+  } else if (variant === "diagram") {
+    // Top right margin, typically empty for diagrams
+    return { top: "40px", right: "-10px" };
+  } else {
+    // Balanced: alternate left/right in lower region
+    return n % 2 === 0 ? { bottom: "25px", right: "15px" } : { bottom: "35px", left: "15px" };
+  }
 }
 function getLayoutVariant(slide) {
   const hasF = slide.formulas && slide.formulas.length > 0;
@@ -63,8 +68,8 @@ function getLayoutVariant(slide) {
 export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisualClone = false }) {
   const stickyRot   = getStickyRotation(slide.slide_number);
   const stickyColor = getStickyColor(slide.slide_number);
-  const stickyPos   = getStickyPosition(slide.slide_number);
   const variant     = getLayoutVariant(slide);
+  const stickyPos   = getStickyPosition(slide.slide_number, variant);
   const bodySize    =
     variant === "text-heavy"    ? "1.2rem" :
     variant === "formula-heavy" ? "1.3rem" : "1.35rem";
@@ -75,7 +80,7 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
       style={{ zIndex, pointerEvents: isVisualClone ? "none" : "auto" }}
     >
       {/* FRONT FACE */}
-      <div className="page-face page-front notebook-paper">
+      <div className="page-face page-front notebook-paper" style={{ overflow: "visible" }}>
 
         {/* Left red margin line */}
         <div style={{
@@ -109,8 +114,8 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
             <h2
               className="handwritten-text"
               style={{
-                fontSize: variant === "text-heavy" ? "1.75rem" : "2.1rem",
-                fontWeight: 700, color: "#1a1a1a",
+                fontSize: variant === "text-heavy" ? "2.2rem" : "2.6rem",
+                fontWeight: 600, color: "#1a1a1a",
                 lineHeight: 1.2, marginBottom: 0,
               }}
             >
@@ -137,9 +142,9 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
                   display: "flex", flexDirection: "column", gap: "8px",
                 }}>
                   {slide.bullets.map((bullet, bIdx) => (
-                    <li key={bIdx} className="handwritten-text" style={{ display: "flex", gap: "10px", fontSize: bodySize, lineHeight: 1.65 }}>
-                      <span style={{ color: "#174A9C", fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>—</span>
-                      <span style={{ flex: 1 }}><MarkdownRenderer content={bullet} /></span>
+                    <li key={bIdx} className="handwritten-text" style={{ display: "flex", gap: "12px", fontSize: "1.3rem", lineHeight: 1.6 }}>
+                      <span style={{ color: "#1a1a1a", flexShrink: 0, marginTop: "2px" }}>•</span>
+                      <span style={{ flex: 1 }} className="math-typography"><MarkdownRenderer content={bullet} /></span>
                     </li>
                   ))}
                 </ul>
@@ -153,9 +158,9 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
                   padding: variant === "diagram" ? "28px 20px" : "14px 18px",
                 }}>
                   <p className="handwritten-text" style={{
-                    color: "#174A9C",
-                    fontSize: variant === "diagram" ? "1.05rem" : "0.9rem",
-                    lineHeight: 1.55, textAlign: "center", fontStyle: "italic", margin: 0,
+                    color: "#1a1a1a",
+                    fontSize: variant === "diagram" ? "1.2rem" : "1.1rem",
+                    lineHeight: 1.5, textAlign: "center", fontStyle: "italic", margin: 0,
                   }}>
                     [ {slide.figure.description} ]
                   </p>
@@ -194,14 +199,14 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
             {/* Note */}
             <div className="sticky-note-physical" style={{
               backgroundColor: stickyColor,
-              padding: "12px 14px 14px",
+              padding: "16px 20px 20px",
               transform: `rotate(${stickyRot}deg)`,
-              maxWidth: "230px", minWidth: "140px",
+              maxWidth: "260px", minWidth: "160px",
               borderRadius: "1px", position: "relative",
             }}>
               <p className="handwritten-text" style={{
-                fontSize: "1.05rem", color: "#1a1200",
-                lineHeight: 1.55, whiteSpace: "pre-wrap", margin: 0,
+                fontSize: "1.3rem", color: "#1a1a1a",
+                lineHeight: 1.5, whiteSpace: "pre-wrap", margin: 0,
               }}>
                 {slide.notes}
               </p>

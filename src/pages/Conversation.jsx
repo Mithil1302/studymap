@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import ContextPanel from '../components/layout/ContextPanel';
 import { useStudyMap } from '../context/StudyMapContext';
 
 export default function Conversation() {
@@ -151,8 +150,6 @@ export default function Conversation() {
           </div>
         </div>
       </main>
-
-      <ContextPanel />
     </>
   );
 }

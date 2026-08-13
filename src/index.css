@@ -41,6 +41,18 @@
     font-size: 1.15rem;   /* base size for inline usage — overridden by component inline styles for larger contexts */
 }
 
+/* Protect KaTeX typography from being overridden by handwritten-text */
+.handwritten-text .katex,
+.handwritten-text .katex * {
+    font-family: KaTeX_Main, 'Times New Roman', serif !important;
+    letter-spacing: normal !important;
+    font-style: normal;
+}
+.handwritten-text .katex-math {
+    font-family: KaTeX_Math, 'Times New Roman', serif !important;
+    font-style: italic !important;
+}
+
 .handwritten-blue {
     font-family: 'Caveat', cursive;
     color: #174A9C;

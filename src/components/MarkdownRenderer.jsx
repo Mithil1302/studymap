@@ -59,6 +59,24 @@ export default function MarkdownRenderer({ content }) {
         td({ children }) {
           return <td className="p-3 border-b border-outline-variant bg-white text-body-md">{children}</td>;
         },
+        p({ node, children }) {
+          // Fix for react-markdown@10 + remark-math@6 duplicate rendering bug
+          // It sometimes emits the raw $$...$$ text alongside the parsed katex node
+          if (Array.isArray(children)) {
+            const filtered = children.filter(child => {
+              if (typeof child === 'string' && child.trim().startsWith('$$') && child.trim().endsWith('$$')) {
+                return false; // Skip the raw math text
+              }
+              return true;
+            });
+            if (filtered.length === 0) return null;
+            return <p className="my-2">{filtered}</p>;
+          }
+          if (typeof children === 'string' && children.trim().startsWith('$$') && children.trim().endsWith('$$')) {
+             return null;
+          }
+          return <p className="my-2">{children}</p>;
+        }
       }}
     >
       {content}

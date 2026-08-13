@@ -14,12 +14,12 @@ function SpiralBinding() {
         <div
           key={i}
           style={{
-            width: '24px',
-            height: '16px',
+            width: '26px',
+            height: '26px',
             borderRadius: '50%',
-            border: '2.5px solid #9a9590',
-            background: 'linear-gradient(135deg, #d6d2cc 0%, #a8a5a0 40%, #7a7875 70%, #b5b2ad 100%)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.2)',
+            border: '4px solid #1a1a1a',
+            background: 'linear-gradient(135deg, #f0f0f0 0%, #b0b0b0 30%, #4a4a4a 70%, #909090 100%)',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.4)',
             flexShrink: 0
           }}
         />
@@ -36,11 +36,12 @@ function PageStackEdge({ count = 4 }) {
         <div
           key={i}
           style={{
-            width: '3px',
+            width: '2px',
             height: '100%',
-            background: i % 2 === 0 ? '#e8ddd0' : '#d4c9b8',
-            opacity: 1 - i * 0.15,
-            borderRadius: '0 1px 1px 0'
+            background: i % 2 === 0 ? '#F4EBDD' : '#E8DDD0',
+            opacity: 1 - i * 0.1,
+            borderRadius: '0 1px 1px 0',
+            boxShadow: '1px 0 1px rgba(0,0,0,0.05)'
           }}
         />
       ))}
@@ -87,14 +88,14 @@ export default function Notebook({ lecture, initialPage = 0 }) {
   }, [currentPage, totalPages, turningState]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+    <div className="w-full mx-auto flex flex-col items-center">
       
       {/* 3D Container */}
       <div 
-        className="relative w-full max-w-3xl notebook-perspective my-4 md:my-8"
+        className="relative w-full max-w-6xl notebook-perspective my-4 md:my-8"
         style={{ 
-          aspectRatio: '3/4',
-          maxHeight: '78vh'
+          aspectRatio: '16/11',
+          maxHeight: '85vh'
         }}
       >
         
@@ -112,14 +113,14 @@ export default function Notebook({ lecture, initialPage = 0 }) {
             className="page-face page-front cursor-pointer group"
             onClick={handleNext}
             style={{
-              background: '#2a2825',
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.06\'/%3E%3C/svg%3E")',
-              borderRadius: '4px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25), 2px 0 4px rgba(0,0,0,0.2)',
+              background: '#242526',
+              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.08\'/%3E%3C/svg%3E")',
+              borderRadius: '6px 8px 8px 6px',
+              boxShadow: 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 6px 0 10px rgba(0,0,0,0.3)',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.28)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.002)'; e.currentTarget.style.boxShadow = 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 16px 48px rgba(0,0,0,0.7), 0 6px 16px rgba(0,0,0,0.5), 8px 0 12px rgba(0,0,0,0.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 6px 0 10px rgba(0,0,0,0.3)'; }}
           >
             {/* Spiral binding on cover */}
             <SpiralBinding />
@@ -135,7 +136,7 @@ export default function Notebook({ lecture, initialPage = 0 }) {
               {/* Small label at top */}
               <div 
                 className="handwritten-text mb-8"
-                style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', letterSpacing: '0.05em' }}
+                style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.2rem', letterSpacing: '0.05em' }}
               >
                 {lecture.course_code}
               </div>
@@ -145,9 +146,9 @@ export default function Notebook({ lecture, initialPage = 0 }) {
                 <div 
                   className="handwritten-text leading-tight"
                   style={{ 
-                    color: 'rgba(255,255,255,0.88)', 
-                    fontSize: 'clamp(1.4rem, 3.5vw, 2rem)',
-                    fontWeight: 600
+                    color: 'rgba(255,255,255,0.95)', 
+                    fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+                    fontWeight: 700
                   }}
                 >
                   {lecture.title}
@@ -166,15 +167,15 @@ export default function Notebook({ lecture, initialPage = 0 }) {
               {/* Week label */}
               <div 
                 className="handwritten-text mt-5"
-                style={{ color: 'rgba(245, 215, 110, 0.7)', fontSize: '1rem' }}
+                style={{ color: 'rgba(245, 215, 110, 0.85)', fontSize: '1.4rem' }}
               >
                 Week {lecture.week.toString().padStart(2, '0')}
               </div>
               
               {/* Open affordance — bottom right */}
               <div 
-                className="handwritten-text absolute bottom-6 right-8 opacity-40 group-hover:opacity-70 transition-opacity"
-                style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem' }}
+                className="handwritten-text absolute bottom-8 right-10 opacity-60 group-hover:opacity-100 transition-opacity"
+                style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}
               >
                 ▸ open
               </div>
@@ -194,11 +195,14 @@ export default function Notebook({ lecture, initialPage = 0 }) {
           {/* Back of Cover */}
           <div 
             className="page-face page-back"
-            style={{ background: '#1e1c1a' }}
+            style={{ 
+              background: '#242526',
+              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.08\'/%3E%3C/svg%3E")',
+            }}
           >
             <div 
-              className="handwritten-text absolute bottom-8 right-8 opacity-10 rotate-[-45deg]"
-              style={{ color: 'white', fontSize: '4rem' }}
+              className="handwritten-text absolute bottom-12 right-12 opacity-15 rotate-[-45deg]"
+              style={{ color: 'white', fontSize: '5rem' }}
             >
               {lecture.course_code}
             </div>
@@ -250,27 +254,28 @@ export default function Notebook({ lecture, initialPage = 0 }) {
           className="flex items-center gap-1.5 transition-all disabled:opacity-30"
           style={{
             backgroundColor: currentPage === 0 ? 'transparent' : '#F4EBDD',
-            border: '1px solid rgba(0,0,0,0.2)',
-            padding: '6px 14px',
-            borderRadius: '2px',
+            border: '1px solid rgba(0,0,0,0.15)',
+            padding: '8px 18px',
+            borderRadius: '1px',
             cursor: currentPage === 0 ? 'default' : 'pointer',
-            boxShadow: currentPage === 0 ? 'none' : '1px 1px 3px rgba(0,0,0,0.1)',
-            fontFamily: 'Hanken Grotesk, sans-serif',
-            fontSize: '0.8rem',
-            color: '#202020',
-            letterSpacing: '0.02em'
+            boxShadow: currentPage === 0 ? 'none' : '1px 2px 4px rgba(0,0,0,0.08), 0 1px 1px rgba(0,0,0,0.04)',
+            fontFamily: 'Caveat, cursive',
+            fontSize: '1.3rem',
+            color: '#2a2825',
+            letterSpacing: '0.02em',
+            transform: 'rotate(-1deg)'
           }}
           aria-label="Previous Page"
         >
-          ← Previous
+          ← Prev
         </button>
         
         {/* Page counter */}
         <div 
           className="handwritten-text min-w-[90px] text-center"
-          style={{ color: '#555045', fontSize: '1rem' }}
+          style={{ color: '#555045', fontSize: '1.4rem' }}
         >
-          {currentPage === 0 ? 'Cover' : `Page ${currentPage} / ${totalPages}`}
+          {currentPage === 0 ? 'Cover' : `Pg ${currentPage} / ${totalPages}`}
         </div>
         
         {/* Next */}
@@ -280,15 +285,16 @@ export default function Notebook({ lecture, initialPage = 0 }) {
           className="flex items-center gap-1.5 transition-all disabled:opacity-30"
           style={{
             backgroundColor: currentPage === totalPages ? 'transparent' : '#F5D76E',
-            border: '1px solid rgba(0,0,0,0.2)',
-            padding: '6px 14px',
-            borderRadius: '2px',
+            border: '1px solid rgba(0,0,0,0.15)',
+            padding: '8px 18px',
+            borderRadius: '1px',
             cursor: currentPage === totalPages ? 'default' : 'pointer',
-            boxShadow: currentPage === totalPages ? 'none' : '1px 2px 4px rgba(0,0,0,0.12)',
-            fontFamily: 'Hanken Grotesk, sans-serif',
-            fontSize: '0.8rem',
-            color: '#202020',
-            letterSpacing: '0.02em'
+            boxShadow: currentPage === totalPages ? 'none' : '2px 3px 6px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06)',
+            fontFamily: 'Caveat, cursive',
+            fontSize: '1.3rem',
+            color: '#2a2825',
+            letterSpacing: '0.02em',
+            transform: 'rotate(1deg)'
           }}
           aria-label="Next Page"
         >
