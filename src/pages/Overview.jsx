@@ -110,9 +110,10 @@ export default function Overview() {
   const nextSlide = nextNode?.slides?.[0] ?? null;
 
   return (
-    // Set to overflow-y-auto to allow independent scrolling if desired, or let window scroll.
-    // Given the request, the desk handles scrolling. We just make sure this container doesn't force hidden overflow.
-    <div className="flex-1 w-full h-full flex flex-col overflow-y-auto overflow-x-auto min-w-0 bg-[#D1C2B0]">
+    // overflow-y-auto → natural vertical scroll when desk is taller than viewport
+    // overflow-x-hidden → absolutely no horizontal scroll at any size
+    // bg matches the DeskSurface colour so there's no visible seam
+    <div className="flex-1 w-full h-full flex flex-col overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#7A5330' }}>
       <StudyDesk 
         currentWeek={currentWeek}
         thread={thread}

@@ -218,13 +218,11 @@ export const courseEdges = [
   { source: "momentum", target: "adam" },
 
   // Week 3 Sequences
-  { source: "gradient-descent", target: "regularization" },
+  { source: "gradient-descent", target: "generalization" },
+  { source: "generalization", target: "overfitting" },
+  { source: "overfitting", target: "regularization" },
   { source: "regularization", target: "l2-penalty" },
   { source: "regularization", target: "l1-penalty" },
-  { source: "l1-penalty", target: "generalization" },
-  { source: "l2-penalty", target: "generalization" },
-  
-  { source: "generalization", target: "overfitting" },
   { source: "overfitting", target: "early-stopping" },
   { source: "overfitting", target: "dropout" },
   { source: "overfitting", target: "bias-variance" },

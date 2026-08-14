@@ -3,6 +3,7 @@ import AppLayout from './components/layout/AppLayout';
 import Overview from './pages/Overview';
 import Conversation from './pages/Conversation';
 import LearningMap from './pages/LearningMap';
+import Lectures from './pages/Lectures';
 import LectureDetail from './pages/LectureDetail';
 import { StudyMapProvider } from './context/StudyMapContext';
 import { ProgressProvider } from './context/ProgressContext';
@@ -17,6 +18,7 @@ function App() {
               <Route path="/" element={<Overview />} />
               <Route path="/conversation" element={<Conversation />} />
               <Route path="/learning-map" element={<LearningMap />} />
+              <Route path="/lectures" element={<Lectures />} />
               <Route path="/lectures/:id" element={<LectureDetail />} />
             </Route>
           </Routes>

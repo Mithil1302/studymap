@@ -1,9 +1,13 @@
-import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudyPlanner({ allStats = [], currentWeek }) {
+  const navigate = useNavigate();
+
   return (
     <div 
-      className="relative w-48 md:w-52 bg-[#F7F7F4] p-5 rounded-sm border border-[#D5D5D2] cursor-default transform -rotate-2 transition-transform hover:rotate-1"
+      className="relative w-48 md:w-52 bg-[#F7F7F4] p-5 rounded-sm border border-[#D5D5D2] cursor-pointer transform -rotate-2 transition-transform hover:rotate-1"
+      onClick={() => navigate('/learning-map')}
+      title="View Learning Planner"
       style={{
         // Medium shadow
         boxShadow: '4px 8px 20px rgba(0,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.03)'

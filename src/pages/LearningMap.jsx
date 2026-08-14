@@ -1,266 +1,387 @@
-import React, { useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
-import StudyJourneyRow from '../components/map/StudyJourneyRow';
-import StudyJourneyThread from '../components/map/StudyJourneyThread';
+import { useNavigate } from 'react-router-dom';
+import MapHeader from '../components/learning-map/MapHeader';
+import KnowledgeMap from '../components/learning-map/KnowledgeMap';
+import ConceptInspector from '../components/learning-map/ConceptInspector';
+import { LEARNING_STATE_COLORS } from '../components/learning-map/learningMapTokens';
 
 export default function LearningMap() {
-  const { courseNodes, courseEdges, inProgressNodes, completedNodes, getNodeStatus } = useProgress();
+  const { courseNodes, courseEdges, completedNodes, inProgressNodes, getNodeStatus } = useProgress();
   const navigate = useNavigate();
+  const [selectedId, setSelectedId] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Responsive check
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   const totalConcepts = courseNodes.length;
-  const exploredConcepts = completedNodes.size + inProgressNodes.size;
+  const exploredConcepts = useMemo(() => {
+    return courseNodes.filter(n => completedNodes.has(n.id) || inProgressNodes.has(n.id)).length;
+  }, [courseNodes, completedNodes, inProgressNodes]);
 
-  // 1. Determine "Current Concept"
-  const currentConcept = useMemo(() => {
-    const inProg = courseNodes.filter(n => inProgressNodes.has(n.id)).sort((a, b) => b.week - a.week);
-    if (inProg.length > 0) return inProg[0];
-    
-    const comp = courseNodes.filter(n => completedNodes.has(n.id)).sort((a, b) => b.week - a.week);
-    if (comp.length > 0) return comp[0];
+  // ─── Empty state check ──────────────────────────────────────────────────────
+  const hasAnyProgress = exploredConcepts > 1; // ml-basics is always completed
 
-    return courseNodes[0];
-  }, [courseNodes, inProgressNodes, completedNodes]);
+  // ─── Compute current thread for both desktop header & mobile list ────────────
+  const { threadNodes, currentId } = useMemo(() => {
+    // Find current concept
+    const inProg = courseNodes
+      .filter(n => inProgressNodes.has(n.id))
+      .sort((a, b) => b.week - a.week);
+    const current = inProg.length > 0
+      ? inProg[0]
+      : courseNodes.filter(n => completedNodes.has(n.id)).sort((a, b) => b.week - a.week)[0] || null;
 
-  // 2. Determine Current Week
-  const currentWeek = currentConcept ? currentConcept.week : 1;
+    if (!current) return { threadNodes: [], currentId: null };
 
-  // 3. Compute Current Learning Thread (Max 4 nodes)
-  const currentThread = useMemo(() => {
-    if (!currentConcept) return [];
-    
-    let path = [currentConcept];
-    let curr = currentConcept;
-    
-    for (let i = 0; i < 3; i++) {
-      const prereqs = courseEdges
-        .filter(e => e.target === curr.id)
+    // Walk backwards recursively to build the ancestor chain
+    const ancestors = [];
+    let curr = current;
+    const visited = new Set([curr.id]);
+
+    while (curr) {
+      ancestors.unshift(curr);
+      // Find the first prerequisite that is also completed/in-progress
+      const prereqEdges = courseEdges.filter(e => e.target === curr.id);
+      const prereqNodes = prereqEdges
         .map(e => courseNodes.find(n => n.id === e.source))
-        .filter(n => n && (completedNodes.has(n.id) || inProgressNodes.has(n.id)));
-      
-      if (prereqs.length > 0) {
-        path.unshift(prereqs[0]);
-        curr = prereqs[0];
+        .filter(n => n && (completedNodes.has(n.id) || inProgressNodes.has(n.id)) && !visited.has(n.id));
+
+      if (prereqNodes.length > 0) {
+        // Prioritize the one with the highest week, or just take the first
+        const nextAncestor = prereqNodes.sort((a, b) => b.week - a.week)[0];
+        curr = nextAncestor;
+        visited.add(curr.id);
       } else {
-        break;
+        curr = null;
       }
     }
     
-    if (path.length < 4) {
-      const nexts = courseEdges
-        .filter(e => e.source === currentConcept.id)
-        .map(e => courseNodes.find(n => n.id === e.target))
-        .filter(Boolean);
-      if (nexts.length > 0) {
-        path.push(nexts[0]);
-      }
-    }
-    
-    return path.slice(0, 4);
-  }, [currentConcept, courseEdges, courseNodes, completedNodes, inProgressNodes]);
+    // ancestors now contains the path from a root down to current
+    const thread = [...ancestors];
 
-  // 4. Compute Next Stop
-  const nextStop = useMemo(() => {
-    if (!currentConcept) return null;
-    
-    const children = courseEdges
-      .filter(e => e.source === currentConcept.id)
-      .map(e => courseNodes.find(n => n.id === e.target));
+    // Walk forward one step to the next immediate available target
+    const nexts = courseEdges
+      .filter(e => e.source === current.id)
+      .map(e => courseNodes.find(n => n.id === e.target))
+      .filter(Boolean);
       
-    const availableChild = children.find(c => c && getNodeStatus(c.id) === 'available');
-    if (availableChild) return availableChild;
-    
-    return courseNodes.find(n => getNodeStatus(n.id) === 'available') || null;
-  }, [currentConcept, courseEdges, courseNodes, getNodeStatus]);
+    if (nexts.length > 0) {
+       // Pick the one that appears first in the course topology
+       thread.push(nexts.sort((a, b) => a.week - b.week)[0]);
+    }
 
-  // 5. Group nodes by week
-  const nodesByWeek = useMemo(() => {
-    const weeks = { 1: [], 2: [], 3: [] }; // Pre-fill weeks 1-3
-    courseNodes.forEach(n => {
-      if (!weeks[n.week]) weeks[n.week] = [];
-      weeks[n.week].push(n);
+    return { threadNodes: thread, currentId: current.id };
+  }, [courseNodes, courseEdges, completedNodes, inProgressNodes]);
+
+  // Group concepts by state for mobile vertical journey
+  const groupedConcepts = useMemo(() => {
+    const learned = [];
+    const ready = [];
+    const locked = [];
+
+    courseNodes.forEach(node => {
+      const status = getNodeStatus(node.id);
+      const isCurr = node.id === currentId;
+      if (isCurr) return; // Shown in Current Thread
+      if (status === 'completed') {
+        learned.push(node);
+      } else if (status === 'available') {
+        ready.push(node);
+      } else {
+        locked.push(node);
+      }
     });
-    return weeks;
-  }, [courseNodes]);
 
-  const weekTitles = {
-    1: "FOUNDATIONS",
-    2: "OPTIMIZATION",
-    3: "GENERALIZATION"
-  };
+    return { learned, ready, locked };
+  }, [courseNodes, getNodeStatus, currentId]);
 
-  const getWeekStats = (weekNumber) => {
-    const nodes = nodesByWeek[weekNumber] || [];
-    const explored = nodes.filter(n => completedNodes.has(n.id) || inProgressNodes.has(n.id)).length;
-    return { explored, total: nodes.length };
-  };
+  // ─── Mobile Layout ──────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <main className="flex-1 overflow-y-auto bg-[#FAF9F6]">
+        <MapHeader explored={exploredConcepts} total={totalConcepts} currentThread={threadNodes} currentId={currentId} />
 
-  return (
-    <main className="flex-1 overflow-y-auto bg-[#F9F4EE] paper-texture flex flex-col items-center py-8 px-6">
-      <div className="w-full max-w-6xl flex flex-col gap-10">
-        
-        {/* COURSE ORIENTATION HEADER */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-2 border-outline-variant pb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-on-surface tracking-tight font-display mb-2">
-              YOUR STUDY JOURNEY
-            </h1>
-            <p className="text-xl text-on-surface-variant font-medium">
-              Machine Learning for Engineers
-            </p>
-          </div>
-          <div className="text-left md:text-right">
-            <p className="text-sm font-bold text-on-surface-variant tracking-widest uppercase mb-2">
-              {exploredConcepts} / {totalConcepts} concepts explored
-            </p>
-            <div className="h-1.5 w-full md:w-64 bg-surface-container-high rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary"
-                style={{ width: `${(exploredConcepts / totalConcepts) * 100}%` }}
-              />
-            </div>
-          </div>
-        </header>
-
-        {/* HERO SECTION: THREAD + NEXT STOP */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <StudyJourneyThread pathNodes={currentThread} currentNodeId={currentConcept?.id} />
-          </div>
-          
-          <div className="lg:col-span-1">
-            {nextStop ? (
-              <div className="bg-white p-6 rounded-2xl border border-outline-variant hard-shadow-sm h-full flex flex-col">
-                <h3 className="text-label-caps font-label-caps text-on-surface-variant mb-6 uppercase tracking-widest">NEXT STOP</h3>
-                
-                <div className="flex-1 border-l-2 border-primary pl-4 py-1 my-2">
-                  <h4 className="text-2xl font-bold text-on-surface mb-2 font-display">
-                    → {nextStop.title}
-                  </h4>
-                  <p className="text-sm text-on-surface-variant font-bold uppercase tracking-wider mb-4">
-                    Week {nextStop.week} {nextStop.slides && `· Slide ${nextStop.slides[0]}`}
-                  </p>
-                  
-                  {/* Prereq logic for Next Stop */}
-                  {courseEdges.filter(e => e.target === nextStop.id).length > 0 && (
-                    <p className="text-sm text-on-surface font-medium mb-2 italic">
-                      Builds on {courseNodes.find(n => n.id === courseEdges.find(e => e.target === nextStop.id).source)?.title}.
-                    </p>
-                  )}
+        {!hasAnyProgress ? (
+          <MobileEmptyState onStart={() => navigate('/lectures/lec_01')} />
+        ) : (
+          <div className="px-5 py-6 flex flex-col gap-6" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
+            {/* 1. CURRENT THREAD */}
+            {threadNodes.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#888]">
+                    CURRENT THREAD
+                  </span>
+                  <div className="flex-1 h-px bg-[#E8E4DC]" />
                 </div>
-
-                <button 
-                  onClick={() => navigate(nextStop.slides ? `/lectures/${nextStop.lectureId}/slides/${nextStop.slides[0]}` : `/lectures/${nextStop.lectureId}`)}
-                  className="w-full py-3 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/80 transition-colors flex items-center justify-center gap-2 mt-auto"
-                >
-                  Continue in Notebook <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </button>
-              </div>
-            ) : (
-              <div className="bg-surface p-6 rounded-2xl border border-outline-variant hard-shadow-sm h-full flex flex-col items-center justify-center text-center">
-                <span className="material-symbols-outlined text-4xl text-primary mb-4">task_alt</span>
-                <h3 className="text-xl font-bold text-on-surface mb-2">Course Complete</h3>
-                <p className="text-on-surface-variant">You have explored all concepts in the study map.</p>
-              </div>
+                <div className="flex flex-col">
+                  {threadNodes.map((node, i) => {
+                    const status = getNodeStatus(node.id);
+                    const isCurr = node.id === currentId;
+                    const isLast = i === threadNodes.length - 1;
+                    return (
+                      <div key={node.id}>
+                        <MobileConceptRow
+                          node={node}
+                          status={status}
+                          isCurrent={isCurr}
+                          isSelected={selectedId === node.id}
+                          onClick={() => setSelectedId(selectedId === node.id ? null : node.id)}
+                        />
+                        {selectedId === node.id && (
+                          <div className="my-2 bg-white border border-[#E8E4DC] rounded-xl overflow-hidden shadow-sm">
+                            <ConceptInspector nodeId={selectedId} onClose={() => setSelectedId(null)} />
+                          </div>
+                        )}
+                        {!isLast && (
+                          <div className="ml-4 w-px h-3.5 bg-[#D5D1C8]" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
             )}
-          </div>
-        </section>
 
-        {/* COURSE PATH TIMELINE */}
-        <section className="mt-8">
-          <h3 className="text-label-caps font-label-caps text-on-surface-variant mb-8 text-center">YOUR COURSE PATH</h3>
-          
-          <div className="relative flex justify-between items-center px-4 md:px-12">
-            {/* Timeline Line */}
-            <div className="absolute left-12 right-12 top-4 h-[2px] bg-outline-variant -z-10" />
-
-            {[1, 2, 3].map((week) => {
-              const isCurrent = week === currentWeek;
-              const stats = getWeekStats(week);
-              const isCompleted = stats.explored === stats.total;
-              
-              return (
-                <div key={week} className="flex flex-col items-center relative bg-[#F9F4EE] px-4">
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mb-4 transition-colors ${
-                    isCurrent 
-                      ? 'bg-primary border-primary text-on-primary' 
-                      : isCompleted 
-                        ? 'bg-surface border-outline text-on-surface'
-                        : 'bg-[#F9F4EE] border-outline-variant text-outline'
-                  }`}>
-                    {isCompleted ? <span className="material-symbols-outlined text-[16px]">check</span> : <span className="font-bold text-sm">{week}</span>}
-                  </div>
-                  
-                  <h4 className="font-bold text-on-surface uppercase text-sm tracking-widest text-center">
-                    WEEK {String(week).padStart(2, '0')}
-                  </h4>
-                  <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1 text-center">
-                    {weekTitles[week]}
-                  </p>
-                  
-                  {isCurrent && (
-                    <div className="absolute -bottom-8 flex flex-col items-center">
-                      <span className="text-[10px] font-bold text-primary font-handwriting uppercase tracking-widest whitespace-nowrap rotate-[-3deg]">you are here</span>
-                      <span className="material-symbols-outlined text-[16px] text-primary -mt-1">arrow_upward</span>
-                    </div>
-                  )}
+            {/* 2. READY NEXT */}
+            {groupedConcepts.ready.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: LEARNING_STATE_COLORS.available.primary }}>
+                    READY NEXT ({groupedConcepts.ready.length})
+                  </span>
+                  <div className="flex-1 h-px bg-[#E8E4DC]" />
                 </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* THREE STUDY ZONES */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-          {[1, 2, 3].map((week) => {
-            const isCurrent = week === currentWeek;
-            
-            return (
-              <div 
-                key={week} 
-                className={`flex flex-col rounded-2xl border transition-all duration-300 relative ${
-                  isCurrent 
-                    ? 'border-primary bg-[#fdfaf6] hard-shadow-sm scale-[1.01]' 
-                    : 'border-outline-variant bg-transparent'
-                }`}
-                style={!isCurrent ? { transform: `rotate(${week === 1 ? '-0.5deg' : '0.5deg'})` } : {}}
-              >
-                {/* Zone Header */}
-                <div className={`p-4 border-b rounded-t-2xl flex flex-col gap-1 ${
-                  isCurrent ? 'bg-primary-container/20 border-primary/20' : 'border-outline-variant'
-                }`}>
-                  <h3 className="font-display font-bold text-xl text-on-surface">
-                    WEEK {String(week).padStart(2, '0')}
-                  </h3>
-                  <h4 className="text-sm font-bold tracking-widest uppercase text-on-surface-variant">
-                    {weekTitles[week]}
-                  </h4>
-                  
-                  {isCurrent && (
-                    <div className="absolute -top-3 -right-3 rotate-12">
-                      <div className="w-6 h-12 bg-black/10 rounded-full blur-sm absolute" />
-                      <div className="w-4 h-10 bg-primary/20 rounded-full border border-primary/40 backdrop-blur-sm relative shadow-sm" />
+                <div className="flex flex-col gap-1">
+                  {groupedConcepts.ready.map(node => (
+                    <div key={node.id}>
+                      <MobileConceptRow
+                        node={node}
+                        status="available"
+                        isCurrent={false}
+                        isSelected={selectedId === node.id}
+                        onClick={() => setSelectedId(selectedId === node.id ? null : node.id)}
+                      />
+                      {selectedId === node.id && (
+                        <div className="my-2 bg-white border border-[#E8E4DC] rounded-xl overflow-hidden shadow-sm">
+                          <ConceptInspector nodeId={selectedId} onClose={() => setSelectedId(null)} />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* Zone Content */}
-                <div className="p-4 flex-1 flex flex-col">
-                  {(nodesByWeek[week] || []).map(node => (
-                    <StudyJourneyRow key={node.id} node={node} />
                   ))}
                 </div>
-              </div>
-            );
-          })}
-        </section>
+              </section>
+            )}
 
-      </div>
+            {/* 3. LEARNED */}
+            {groupedConcepts.learned.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: LEARNING_STATE_COLORS.learned.primary }}>
+                    LEARNED ({groupedConcepts.learned.length})
+                  </span>
+                  <div className="flex-1 h-px bg-[#E8E4DC]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  {groupedConcepts.learned.map(node => (
+                    <div key={node.id}>
+                      <MobileConceptRow
+                        node={node}
+                        status="completed"
+                        isCurrent={false}
+                        isSelected={selectedId === node.id}
+                        onClick={() => setSelectedId(selectedId === node.id ? null : node.id)}
+                      />
+                      {selectedId === node.id && (
+                        <div className="my-2 bg-white border border-[#E8E4DC] rounded-xl overflow-hidden shadow-sm">
+                          <ConceptInspector nodeId={selectedId} onClose={() => setSelectedId(null)} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 4. LOCKED */}
+            {groupedConcepts.locked.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#A8A6A1]">
+                    LOCKED ({groupedConcepts.locked.length})
+                  </span>
+                  <div className="flex-1 h-px bg-[#E8E4DC]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  {groupedConcepts.locked.map(node => (
+                    <MobileConceptRow
+                      key={node.id}
+                      node={node}
+                      status="locked"
+                      isCurrent={false}
+                      isSelected={false}
+                      onClick={() => {}}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+      </main>
+    );
+  }
+
+  // ─── Desktop Layout ─────────────────────────────────────────────────────────
+  return (
+    <main className="flex-1 flex flex-col overflow-hidden bg-[#FAF9F6]">
+      <MapHeader explored={exploredConcepts} total={totalConcepts} currentThread={threadNodes} currentId={currentId} />
+
+      {!hasAnyProgress ? (
+        <DesktopEmptyState onStart={() => navigate('/lectures/lec_01')} />
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          {/* Knowledge Map DAG */}
+          <KnowledgeMap
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            threadNodes={threadNodes}
+          />
+
+          {/* Inspector — docked on right when concept selected */}
+          {selectedId && (
+            <div
+              className="flex-shrink-0 overflow-y-auto transition-all duration-300 bg-[#FAF9F6] shadow-md z-30"
+              style={{ width: '32%', minWidth: '300px', maxWidth: '380px' }}
+            >
+              <ConceptInspector nodeId={selectedId} onClose={() => setSelectedId(null)} />
+            </div>
+          )}
+        </div>
+      )}
     </main>
+  );
+}
+
+// ─── Mobile concept row ─────────────────────────────────────────────────────
+function MobileConceptRow({ node, status, isCurrent, isSelected, onClick }) {
+  const isLocked = status === 'locked';
+  const isCompleted = status === 'completed';
+  const isAvailable = status === 'available';
+
+  const stateToken = isCurrent
+    ? LEARNING_STATE_COLORS.current
+    : isCompleted
+    ? LEARNING_STATE_COLORS.learned
+    : isAvailable
+    ? LEARNING_STATE_COLORS.available
+    : LEARNING_STATE_COLORS.locked;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={isLocked}
+      className="w-full text-left flex items-center gap-3 py-2 px-3 rounded-lg transition-colors border"
+      style={{
+        background: isSelected
+          ? '#FFFDF9'
+          : isCurrent
+          ? '#FFFCF2'
+          : 'transparent',
+        borderColor: isSelected
+          ? '#D5D1C8'
+          : isCurrent
+          ? '#EBE4D0'
+          : 'transparent',
+        opacity: isLocked ? 0.60 : 1,
+        cursor: isLocked ? 'not-allowed' : 'pointer',
+      }}
+    >
+      <span
+        className="text-xs flex-shrink-0 font-bold"
+        style={{ color: stateToken.primary }}
+      >
+        {stateToken.icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div
+          className="text-xs font-semibold truncate"
+          style={{
+            color: isCurrent || isSelected ? '#1a1a1a' : isCompleted ? '#384d3f' : isAvailable ? '#2a3b4c' : '#8F8C87',
+            fontFamily: "'Hanken Grotesk', sans-serif",
+          }}
+        >
+          {node.title}
+        </div>
+        <div
+          className="text-[10px] truncate text-[#888]"
+          style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}
+        >
+          Week {String(node.week).padStart(2, '0')}
+          {node.slides && node.slides.length > 0 && ` · Slide ${node.slides[0]}`}
+          {isCurrent && ' · YOU ARE HERE'}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ─── Empty states ───────────────────────────────────────────────────────────
+function DesktopEmptyState({ onStart }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-8" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
+      <div
+        className="w-14 h-14 rounded-full border-2 border-dashed border-[#ccc] flex items-center justify-center mb-5"
+      >
+        <span className="material-symbols-outlined text-2xl text-[#aaa]">explore</span>
+      </div>
+      <h2 className="text-xl font-bold text-[#1a1a1a] mb-2">
+        Start Your Knowledge Map
+      </h2>
+      <p className="text-sm text-[#888] max-w-md mb-6">
+        Your map will grow as you explore concepts through lectures and conversations.
+      </p>
+      <button
+        onClick={onStart}
+        className="px-6 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors bg-[#1a1a1a] hover:bg-[#333]"
+      >
+        Explore Week 01 →
+      </button>
+    </div>
+  );
+}
+
+function MobileEmptyState({ onStart }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center px-6 py-16" style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
+      <div
+        className="w-12 h-12 rounded-full border-2 border-dashed border-[#ccc] flex items-center justify-center mb-4"
+      >
+        <span className="material-symbols-outlined text-xl text-[#aaa]">explore</span>
+      </div>
+      <h2 className="text-lg font-bold text-[#1a1a1a] mb-2">
+        Start Your Knowledge Map
+      </h2>
+      <p className="text-sm text-[#888] max-w-sm mb-5">
+        Your map will grow as you explore concepts.
+      </p>
+      <button
+        onClick={onStart}
+        className="px-5 py-2 text-sm font-semibold text-white rounded-lg bg-[#1a1a1a]"
+      >
+        Explore Week 01 →
+      </button>
+    </div>
   );
 }

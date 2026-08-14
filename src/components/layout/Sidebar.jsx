@@ -1,16 +1,13 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useStudyMap } from '../../context/StudyMapContext';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { startNewConversation } = useStudyMap();
 
   const navItems = [
     { name: 'Overview', path: '/', icon: 'dashboard' },
     { name: 'Learning Map', path: '/learning-map', icon: 'map' },
     { name: 'Conversation', path: '/conversation', icon: 'forum' },
-    { name: 'Lectures', path: '/lectures/week-02-slide-09', icon: 'menu_book' }, // Default mock route for now
+    { name: 'Lectures', path: '/lectures', icon: 'menu_book' },
   ];
 
   return (

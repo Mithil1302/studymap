@@ -1,4 +1,3 @@
-import React from "react";
 import MarkdownRenderer from "./MarkdownRenderer";
 import katex from "katex";
 
@@ -114,7 +113,7 @@ export default function NotebookPage({ slide, lecture, isFlipped, zIndex, isVisu
             <h2
               className="handwritten-text"
               style={{
-                fontSize: variant === "text-heavy" ? "2.2rem" : "2.6rem",
+                fontSize: variant === "text-heavy" ? "1.8rem" : "2.2rem",
                 fontWeight: 600, color: "#1a1a1a",
                 lineHeight: 1.2, marginBottom: 0,
               }}

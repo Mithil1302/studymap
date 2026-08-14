@@ -1,27 +1,59 @@
-import React from 'react';
 
+/**
+ * DeskSurface — Warm walnut desk surface.
+ * Natural vertical scrolling. No forced min-width. No horizontal scroll.
+ * Objects inside determine the height; padding ensures the bottom edge is breathable.
+ */
 export default function DeskSurface({ children }) {
   return (
-    <div 
-      className="relative w-full"
+    <div
+      className="relative w-full overflow-x-hidden"
       style={{
-        // Minimum height naturally scrollable, not forced to 1.25x viewport.
-        minHeight: 'max(760px, calc(100vh - 64px))', // Assuming header is ~64px
-        // Extra bottom padding to act as the "desk edge" and prevent clipping
-        paddingBottom: '80px',
-        // Warm walnut surface
-        backgroundColor: '#9A7958',
-        backgroundImage: `
-          radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.15) 100%),
-          url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E")
+        minHeight: 'calc(100vh - 64px)',
+        paddingBottom: '100px',
+        // Warm walnut surface with subtle lighting
+        background: `
+          radial-gradient(ellipse 70% 50% at 50% 25%, rgba(255,255,255,0.07) 0%, transparent 70%),
+          radial-gradient(ellipse 100% 80% at 50% 100%, rgba(0,0,0,0.18) 0%, transparent 60%),
+          linear-gradient(175deg, #A87C52 0%, #8B6239 40%, #7A5330 100%)
         `,
-        backgroundSize: '100% 100%, 250px 250px'
       }}
     >
-      {/* Desk edge shadow to ground the entire workspace */}
-      <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-      
-      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 md:px-8 py-8 md:py-12 flex flex-col h-full">
+      {/* Very subtle wood grain texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            repeating-linear-gradient(
+              88deg,
+              rgba(255,255,255,0.012) 0px,
+              rgba(255,255,255,0.012) 1px,
+              transparent 1px,
+              transparent 28px
+            )
+          `,
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Desk edge — bottom vignette to "ground" the surface */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{
+          height: '60px',
+          background:
+            'linear-gradient(to top, rgba(0,0,0,0.22) 0%, transparent 100%)',
+        }}
+      />
+
+      {/* Desk lip at very bottom */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{ height: '6px', background: 'rgba(0,0,0,0.3)' }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 w-full h-full px-6 sm:px-10 lg:px-14 pt-10">
         {children}
       </div>
     </div>

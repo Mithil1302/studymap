@@ -2,27 +2,88 @@ import React, { useState, useEffect } from 'react';
 import NotebookPage from './NotebookPage';
 import PageTurner from './PageTurner';
 
-// Spiral ring rendering — CSS-only rings that look metallic
+// ─── Per-week cover identity (matches LectureBookshelf notebooks) ────────────
+const COVER_IDENTITIES = {
+  1: {
+    coverGradient: 'linear-gradient(145deg, #F6F1E7 0%, #EDE5D5 100%)',
+    tabColor: '#4A90D9',
+    sketch: (
+      <svg width="80" height="64" viewBox="0 0 80 64" fill="none" style={{ opacity: 0.4 }}>
+        <path d="M10 54 L10 8 M10 54 L74 54" stroke="#444" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M14 48 C28 42, 42 26, 68 12" stroke="#4A90D9" strokeWidth="1.5" strokeLinecap="round" />
+        <text x="66" y="58" fill="#777" fontSize="8" fontFamily="Caveat, cursive">x</text>
+        <text x="3" y="10" fill="#777" fontSize="8" fontFamily="Caveat, cursive">y</text>
+      </svg>
+    ),
+    formula: 'y = wx + b',
+    marginNote: 'remember: minimize the loss!',
+  },
+  2: {
+    coverGradient: 'linear-gradient(145deg, #FAF7EF 0%, #F0EBDF 100%)',
+    tabColor: '#D4644A',
+    sketch: (
+      <svg width="72" height="56" viewBox="0 0 72 56" fill="none" style={{ opacity: 0.4 }}>
+        <circle cx="10" cy="16" r="5" stroke="#666" strokeWidth="1" fill="none" />
+        <circle cx="10" cy="40" r="5" stroke="#666" strokeWidth="1" fill="none" />
+        <circle cx="36" cy="10" r="5" stroke="#666" strokeWidth="1" fill="none" />
+        <circle cx="36" cy="28" r="5" stroke="#666" strokeWidth="1" fill="none" />
+        <circle cx="36" cy="46" r="5" stroke="#666" strokeWidth="1" fill="none" />
+        <circle cx="62" cy="28" r="5" stroke="#D4644A" strokeWidth="1.2" fill="none" />
+        <line x1="15" y1="16" x2="31" y2="10" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="15" y1="16" x2="31" y2="28" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="15" y1="16" x2="31" y2="46" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="15" y1="40" x2="31" y2="10" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="15" y1="40" x2="31" y2="28" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="15" y1="40" x2="31" y2="46" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="41" y1="10" x2="57" y2="28" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="41" y1="28" x2="57" y2="28" stroke="#bbb" strokeWidth="0.7" />
+        <line x1="41" y1="46" x2="57" y2="28" stroke="#bbb" strokeWidth="0.7" />
+      </svg>
+    ),
+    formula: '∂L/∂w = ?',
+    marginNote: 'chain rule is key',
+  },
+  3: {
+    coverGradient: 'linear-gradient(145deg, #F3F0E8 0%, #EAE5D8 100%)',
+    tabColor: '#6B9E5A',
+    sketch: (
+      <svg width="76" height="50" viewBox="0 0 76 50" fill="none" style={{ opacity: 0.4 }}>
+        <path d="M8 44 L8 6" stroke="#444" strokeWidth="1" strokeLinecap="round" />
+        <path d="M8 44 L72 44" stroke="#444" strokeWidth="1" strokeLinecap="round" />
+        <path d="M10 14 C22 16, 38 28, 68 40" stroke="#D4644A" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="3 2" />
+        <path d="M10 40 C28 36, 48 22, 68 10" stroke="#4A90D9" strokeWidth="1.2" strokeLinecap="round" />
+        <text x="56" y="12" fill="#4A90D9" fontSize="7" fontFamily="Caveat, cursive">var</text>
+        <text x="56" y="42" fill="#D4644A" fontSize="7" fontFamily="Caveat, cursive">bias²</text>
+      </svg>
+    ),
+    formula: 'λ · ||w||²',
+    marginNote: "don't overfit!",
+  },
+};
+
+// ─── Spiral binding for open notebook ────────────────────────────────────────
 function SpiralBinding() {
-  const rings = Array.from({ length: 10 });
   return (
-    <div 
-      className="absolute left-0 top-0 bottom-0 z-30 flex flex-col justify-center items-center"
-      style={{ width: '28px', gap: '10px', paddingTop: '18px', paddingBottom: '18px' }}
-    >
-      {rings.map((_, i) => (
-        <div
-          key={i}
-          style={{
-            width: '26px',
-            height: '26px',
-            borderRadius: '50%',
-            border: '4px solid #1a1a1a',
-            background: 'linear-gradient(135deg, #f0f0f0 0%, #b0b0b0 30%, #4a4a4a 70%, #909090 100%)',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.4)',
-            flexShrink: 0
-          }}
-        />
+    <div className="absolute top-0 bottom-0 left-0 flex flex-col justify-evenly items-center z-50 pointer-events-none" style={{ width: '40px', padding: '16px 0', transform: 'translateX(-50%)' }}>
+      {Array.from({ length: 24 }).map((_, i) => (
+        <div key={i} className="relative flex items-center justify-center w-full" style={{ height: '12px' }}>
+          {/* Wire ring — thin dark metal */}
+          <div 
+            style={{ 
+              width: '26px', 
+              height: '5px', 
+              borderRadius: '40%', 
+              background: 'linear-gradient(to bottom, #555, #222, #333)',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.5)',
+              transform: 'rotate(-3deg)',
+              zIndex: 2
+            }} 
+          />
+          {/* Left page hole */}
+          <div className="absolute left-[2px] w-[6px] h-[6px] rounded-full bg-[#111] opacity-60" style={{ zIndex: 1 }} />
+          {/* Right page hole */}
+          <div className="absolute right-[2px] w-[6px] h-[6px] rounded-full bg-[#111] opacity-60" style={{ zIndex: 1 }} />
+        </div>
       ))}
     </div>
   );
@@ -59,6 +120,7 @@ export default function Notebook({ lecture, initialPage = 0 }) {
   }, [lecture.lecture_id]);
 
   const totalPages = lecture.slides.length;
+  const identity = COVER_IDENTITIES[lecture.week] || COVER_IDENTITIES[1];
 
   const handleNext = () => {
     if (currentPage < totalPages && !turningState) {
@@ -108,101 +170,147 @@ export default function Notebook({ lecture, initialPage = 0 }) {
             display: (turningState && (turningState.fromPage === 0 || turningState.toPage === 0)) ? 'none' : 'block'
           }}
         >
-          {/* Front of Cover — physical notebook */}
+          {/* Front of Cover — warm student notebook */}
           <div 
             className="page-face page-front cursor-pointer group"
             onClick={handleNext}
             style={{
-              background: '#242526',
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.08\'/%3E%3C/svg%3E")',
-              borderRadius: '6px 8px 8px 6px',
-              boxShadow: 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 6px 0 10px rgba(0,0,0,0.3)',
+              background: identity.coverGradient,
+              borderRadius: '4px 6px 6px 4px',
+              boxShadow: 'inset -2px 0 8px rgba(0,0,0,0.04), inset 0 0 15px rgba(0,0,0,0.03), 0 8px 28px rgba(0,0,0,0.2), 0 3px 8px rgba(0,0,0,0.15), 4px 0 6px rgba(0,0,0,0.08)',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.002)'; e.currentTarget.style.boxShadow = 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 16px 48px rgba(0,0,0,0.7), 0 6px 16px rgba(0,0,0,0.5), 8px 0 12px rgba(0,0,0,0.3)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'inset -2px 0 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 6px 0 10px rgba(0,0,0,0.3)'; }}
+            onMouseEnter={e => { 
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.002)'; 
+              e.currentTarget.style.boxShadow = 'inset -2px 0 8px rgba(0,0,0,0.04), inset 0 0 15px rgba(0,0,0,0.03), 0 12px 36px rgba(0,0,0,0.25), 0 5px 12px rgba(0,0,0,0.18), 6px 0 8px rgba(0,0,0,0.1)'; 
+            }}
+            onMouseLeave={e => { 
+              e.currentTarget.style.transform = ''; 
+              e.currentTarget.style.boxShadow = 'inset -2px 0 8px rgba(0,0,0,0.04), inset 0 0 15px rgba(0,0,0,0.03), 0 8px 28px rgba(0,0,0,0.2), 0 3px 8px rgba(0,0,0,0.15), 4px 0 6px rgba(0,0,0,0.08)'; 
+            }}
           >
-            {/* Spiral binding on cover */}
+            {/* Paper texture overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-25 mix-blend-multiply rounded-sm"
+              style={{
+                backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.7%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E")'
+              }}
+            />
+
+            {/* Spiral binding */}
             <SpiralBinding />
             
             {/* Page-stack edges */}
             <PageStackEdge count={5} />
             
-            {/* Cover content — restrained, handwritten feel */}
+            {/* Tab */}
+            <div
+              className="absolute -right-2 w-6 h-12 rounded-r-sm shadow-sm z-20"
+              style={{ top: '20%', background: identity.tabColor, opacity: 0.75 }}
+            />
+            
+            {/* Cover content — handwritten student feel */}
             <div 
-              className="absolute inset-0 flex flex-col justify-center pl-12 pr-8"
-              style={{ paddingTop: '15%', paddingBottom: '12%' }}
+              className="absolute inset-0 flex flex-col pl-12 pr-10 z-10"
+              style={{ paddingTop: '8%', paddingBottom: '8%' }}
             >
-              {/* Small label at top */}
-              <div 
-                className="handwritten-text mb-8"
-                style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.2rem', letterSpacing: '0.05em' }}
-              >
-                {lecture.course_code}
-              </div>
-              
-              {/* Main title */}
+              {/* Top Section: Course & Week */}
               <div>
                 <div 
-                  className="handwritten-text leading-tight"
+                  className="font-sans font-bold text-[#555] mb-2"
+                  style={{ fontSize: 'clamp(0.9rem, 1.2vw, 1.1rem)', letterSpacing: '0.05em' }}
+                >
+                  CS 4780
+                </div>
+                
+                {/* Week label — slightly highlighted */}
+                <div className="relative inline-block w-fit mb-8">
+                  <span 
+                    className="absolute inset-0 -mx-2 rounded-sm"
+                    style={{ background: 'rgba(254,235,100,0.3)', transform: 'rotate(0.5deg) skewX(-2deg)' }}
+                  />
+                  <span 
+                    className="font-handwritten text-[#333] relative z-10 px-1"
+                    style={{ fontSize: 'clamp(1.1rem, 2vw, 1.4rem)' }}
+                  >
+                    Week {lecture.week.toString().padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1" />
+              
+              {/* Center Section: Main Title */}
+              <div style={{ transform: 'rotate(-0.5deg)' }}>
+                <div 
+                  className="font-handwritten leading-tight text-[#1a1a1a]"
                   style={{ 
-                    color: 'rgba(255,255,255,0.95)', 
-                    fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                    fontWeight: 700
+                    fontSize: 'clamp(1.8rem, 4vw, 3rem)',
+                    fontWeight: 700,
                   }}
                 >
                   {lecture.title}
                 </div>
-                <div 
-                  style={{
-                    height: '1.5px',
-                    background: 'rgba(245, 215, 110, 0.5)',
-                    marginTop: '8px',
-                    width: '60%',
-                    borderRadius: '1px'
-                  }}
-                />
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1" />
+
+              {/* Bottom Section: Academic sketch & notes */}
+              <div className="flex items-end justify-between mt-auto">
+                {/* Tiny formula scribble & margin note */}
+                <div style={{ transform: 'rotate(-1.5deg)' }}>
+                  <div 
+                    className="font-handwritten text-[#444]" 
+                    style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.2rem)' }}
+                  >
+                    {identity.formula}
+                  </div>
+                  <div
+                    className="font-handwritten text-[#888] mt-1"
+                    style={{ fontSize: 'clamp(0.75rem, 1.2vw, 0.95rem)', transform: 'rotate(1deg)' }}
+                  >
+                    — {identity.marginNote}
+                  </div>
+                </div>
+                
+                {/* Tiny diagram */}
+                <div style={{ transform: 'rotate(1.5deg)' }}>
+                  {identity.sketch}
+                </div>
               </div>
               
-              {/* Week label */}
+              {/* Open affordance */}
               <div 
-                className="handwritten-text mt-5"
-                style={{ color: 'rgba(245, 215, 110, 0.85)', fontSize: '1.4rem' }}
-              >
-                Week {lecture.week.toString().padStart(2, '0')}
-              </div>
-              
-              {/* Open affordance — bottom right */}
-              <div 
-                className="handwritten-text absolute bottom-8 right-10 opacity-60 group-hover:opacity-100 transition-opacity"
-                style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}
+                className="font-handwritten absolute bottom-6 right-10 text-[#aaa] opacity-60 group-hover:opacity-100 transition-opacity z-10"
+                style={{ fontSize: 'clamp(1rem, 1.5vw, 1.2rem)' }}
               >
                 ▸ open
               </div>
             </div>
 
-            {/* Worn corner edge */}
+            {/* Subtle corner wear */}
             <div 
               className="absolute bottom-0 right-0 pointer-events-none"
               style={{
-                width: '40px', height: '40px',
-                background: 'radial-gradient(circle at bottom right, rgba(0,0,0,0.35) 0%, transparent 70%)',
+                width: '30px', height: '30px',
+                background: 'radial-gradient(circle at bottom right, rgba(0,0,0,0.06) 0%, transparent 70%)',
                 borderRadius: '0 0 4px 0'
               }}
             />
           </div>
           
-          {/* Back of Cover */}
+          {/* Back of Cover — warm paper reverse */}
           <div 
             className="page-face page-back"
             style={{ 
-              background: '#242526',
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.08\'/%3E%3C/svg%3E")',
+              background: identity.coverGradient,
             }}
           >
             <div 
-              className="handwritten-text absolute bottom-12 right-12 opacity-15 rotate-[-45deg]"
-              style={{ color: 'white', fontSize: '5rem' }}
+              className="font-handwritten absolute bottom-12 right-12 opacity-10 rotate-[-45deg]"
+              style={{ color: '#333', fontSize: '5rem' }}
             >
               {lecture.course_code}
             </div>
@@ -304,4 +412,3 @@ export default function Notebook({ lecture, initialPage = 0 }) {
     </div>
   );
 }
-

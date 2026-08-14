@@ -1,4 +1,3 @@
-import React from 'react';
 import DeskSurface from './DeskSurface';
 import FocusBoard from './FocusBoard';
 import LaptopObject from './LaptopObject';
@@ -6,73 +5,111 @@ import TextbookStack from './TextbookStack';
 import StudyPlanner from './StudyPlanner';
 import StudyNotebook from './StudyNotebook';
 import NextStudyNote from './NextStudyNote';
-import StationeryHolder from './StationeryHolder';
 
-export default function StudyDesk({ 
-  currentWeek, 
-  thread, 
-  nextNode, 
-  nextLec, 
-  nextSlide, 
-  allStats 
+export default function StudyDesk({
+  currentWeek,
+  thread,
+  nextNode,
+  nextLec,
+  nextSlide,
+  allStats,
 }) {
   return (
     <DeskSurface>
-      {/* 
-        Responsive layout: 
-        On mobile, flex-col stack ("study tray").
-        On md+, relative positioning for a top-down desk arrangement.
-        We establish a container with a generous min-width/max-width to ensure objects don't crush together.
-      */}
-      <div className="relative w-full max-w-[1400px] min-w-0 md:min-w-[1150px] mx-auto flex flex-col md:block gap-12 md:gap-0 mt-4 md:mt-0 min-h-[850px] overflow-x-hidden md:overflow-x-visible">
-        
-        {/* BACK LEFT: Focus Board */}
-        {/* Width: ~288px */}
-        <div className="desk-focus md:absolute md:top-[40px] md:left-[30px] lg:left-[60px] md:z-10 w-full md:w-auto order-none flex justify-center">
-          <FocusBoard />
+
+      {/* ══════════════════════════════════════════
+          DESKTOP LAYOUT (≥1024px)
+          True CSS Grid spatial composition
+         ══════════════════════════════════════════ */}
+      <div
+        className="hidden lg:grid w-full max-w-[1500px] mx-auto px-8"
+        style={{
+          // 3 columns: Left | Center | Right
+          gridTemplateColumns: 'minmax(280px, 1.2fr) minmax(400px, 2fr) minmax(280px, 1.2fr)',
+          gridTemplateRows: 'auto 60px auto 40px auto', // Row 1 (Back) | Gap | Row 3 (Notebook) | Gap | Row 5 (Front)
+          columnGap: 'clamp(32px, 4vw, 80px)',
+        }}
+      >
+        {/* ─ ROW 1: BACK (z-index 10) ─ */}
+        <div className="flex items-end justify-start relative z-10" style={{ gridColumn: '1', gridRow: '1' }}>
+          <FocusBoard thread={thread} />
         </div>
-        
-        {/* BACK CENTER: Laptop */}
-        {/* Width: ~380-420px */}
-        <div className="desk-laptop md:absolute md:top-[40px] md:left-[50%] md:-translate-x-1/2 md:z-20 w-full md:w-auto order-2 md:order-none flex justify-center">
+
+        <div className="flex items-end justify-center relative z-10" style={{ gridColumn: '2', gridRow: '1' }}>
           <LaptopObject />
         </div>
 
-        {/* BACK RIGHT: Books */}
-        {/* Width: ~256px */}
-        <div className="desk-books md:absolute md:top-[40px] md:right-[30px] lg:right-[60px] md:z-10 w-full md:w-auto order-1 md:order-none flex justify-center">
+        <div className="flex items-end justify-end relative z-10" style={{ gridColumn: '3', gridRow: '1' }}>
           <TextbookStack />
         </div>
 
-        {/* CENTER HERO: Notebook */}
-        {/* Scale reduced to ~38-42% of desk width. Max ~500px. Overlaps laptop base max 10-15%. */}
-        {/* Laptop is ~320px high, top is 40. Bottom is 360. Notebook top is 300, overlaps by 60px (~15% of laptop). */}
-        <div className="desk-notebook md:absolute md:top-[300px] md:left-[50%] md:-translate-x-1/2 md:z-30 w-full md:w-[480px] lg:w-[500px] order-3 md:order-none flex justify-center">
-          <StudyNotebook thread={thread} />
+        {/* ─ ROW 3: CENTER / NOTEBOOK (z-index 20) ─ */}
+        <div className="flex items-start justify-center relative z-20" style={{ gridColumn: '2', gridRow: '3', marginTop: '10px' }}>
+          <div style={{ width: 'min(44vw, 560px)' }}>
+            <StudyNotebook thread={thread} />
+          </div>
         </div>
 
-        {/* FRONT LEFT: Planner */}
-        {/* Width: ~208px */}
-        {/* Notebook left edge is ~50% - 250px = ~350px on a 1200px screen. Planner right edge is 60+208=268px. No overlap! */}
-        <div className="desk-planner md:absolute md:top-[500px] md:left-[30px] lg:left-[60px] md:z-20 w-full md:w-auto order-4 md:order-none flex justify-center">
+        {/* ─ ROW 5: FRONT (z-index 30) ─ */}
+        <div className="flex items-start justify-start relative z-30 pt-4" style={{ gridColumn: '1', gridRow: '3 / 6' }}>
           <StudyPlanner allStats={allStats} currentWeek={currentWeek} />
         </div>
 
-        {/* FRONT RIGHT: Next Up Note */}
-        {/* Width: ~176px */}
-        {/* Notebook right edge is ~50% + 250px = ~850px on 1200px. Note left edge is 1200-200-176=824px? Let's use right-[160px] -> 1200-160-176=864px. No overlap! */}
-        <div className="desk-next md:absolute md:top-[440px] md:right-[150px] lg:right-[180px] md:z-20 w-full md:w-auto mt-4 md:mt-0 order-5 md:order-none flex justify-center">
+        <div className="flex items-start justify-end relative z-30 pt-16" style={{ gridColumn: '3', gridRow: '3 / 6' }}>
           <NextStudyNote nextNode={nextNode} nextLec={nextLec} nextSlide={nextSlide} />
         </div>
-
-        {/* FRONT RIGHT (Far edge): Stationery */}
-        {/* Width: ~112px */}
-        {/* Placed safely to the right of the Next Up Note */}
-        <div className="desk-stationery md:absolute md:top-[540px] md:right-[20px] lg:right-[40px] md:z-[25] hidden md:flex justify-center">
-          <StationeryHolder />
-        </div>
-        
       </div>
+
+      {/* ══════════════════════════════════════════
+          TABLET LAYOUT (768–1023px)
+          Stacked but maintaining logical separation
+         ══════════════════════════════════════════ */}
+      <div className="hidden md:flex lg:hidden flex-col items-center w-full gap-16 max-w-[900px] mx-auto pb-12">
+        <div className="flex justify-center w-full relative z-10">
+          <FocusBoard thread={thread} />
+        </div>
+        <div className="flex flex-row justify-center items-end gap-16 w-full flex-wrap relative z-10">
+          <LaptopObject />
+          <TextbookStack />
+        </div>
+        <div className="flex justify-center w-full px-4 relative z-20 mt-4">
+          <div style={{ width: 'min(80vw, 540px)' }}>
+            <StudyNotebook thread={thread} />
+          </div>
+        </div>
+        <div className="flex flex-row justify-center items-start gap-16 w-full flex-wrap relative z-30 mt-4">
+          <StudyPlanner allStats={allStats} currentWeek={currentWeek} />
+          <NextStudyNote nextNode={nextNode} nextLec={nextLec} nextSlide={nextSlide} />
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          MOBILE LAYOUT (<768px)
+          Pure vertical stack, no clipping
+         ══════════════════════════════════════════ */}
+      <div className="flex md:hidden flex-col items-center w-full gap-12 pb-16 px-4">
+        <div className="flex justify-center w-full">
+          <FocusBoard thread={thread} />
+        </div>
+        <div className="flex justify-center w-full">
+          <LaptopObject />
+        </div>
+        <div className="flex justify-center w-full">
+          <TextbookStack />
+        </div>
+        <div className="flex justify-center w-full">
+          <div style={{ width: 'min(92vw, 440px)' }}>
+            <StudyNotebook thread={thread} />
+          </div>
+        </div>
+        <div className="flex justify-center w-full">
+          <StudyPlanner allStats={allStats} currentWeek={currentWeek} />
+        </div>
+        <div className="flex justify-center w-full">
+          <NextStudyNote nextNode={nextNode} nextLec={nextLec} nextSlide={nextSlide} />
+        </div>
+      </div>
+
     </DeskSurface>
   );
 }
